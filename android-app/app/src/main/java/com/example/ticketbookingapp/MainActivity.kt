@@ -4,7 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.ticketbookingapp.appUi.register.RegisterScreen
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
+import com.example.ticketbookingapp.navigation.NavGraph
 import com.example.ticketbookingapp.ui.theme.TicketBookingAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -13,7 +16,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             TicketBookingAppTheme {
-                RegisterScreen()
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    NavGraph()
+                }
             }
         }
     }

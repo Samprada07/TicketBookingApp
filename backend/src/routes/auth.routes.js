@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const pool = require("../db");
 
 // Register user
+const jwt = require("jsonwebtoken");
 router.post("/register", async (req, res) => {
     const { name, email, password } = req.body;
 
@@ -27,7 +28,25 @@ router.post("/register", async (req, res) => {
             [name, email, password_hash]
         );
 
-        res.json({ user: newUser.rows[0] });
+        const user = newUser.rows[0];
+
+        // Generate JWT
+        const token = jwt.sign(
+            { id: user.id, email: user.email },
+            process.env.JWT_SECRET,  // make sure JWT_SECRET is in your .env
+            { expiresIn: "7d" }
+        );
+
+        // Send back token + user
+        res.status(201).json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email
+            }
+        });
+
     } catch (err) {
         console.error(err.message);
         res.status(500).send("Server error");

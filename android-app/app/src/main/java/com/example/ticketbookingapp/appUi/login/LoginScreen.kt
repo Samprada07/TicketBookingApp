@@ -1,10 +1,9 @@
-package com.example.ticketbookingapp.appUi.register
+package com.example.ticketbookingapp.appUi.login
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -12,19 +11,20 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.ticketbookingapp.viewmodel.RegisterViewModel
+import com.example.ticketbookingapp.viewmodel.LoginViewModel
 
 @Composable
-fun RegisterScreen(
-    onNavigateToLogin: () -> Unit,
-    viewModel: RegisterViewModel = viewModel()
+fun LoginScreen(
+    onNavigateToRegister: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    viewModel: LoginViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
 
-    // Auto-navigate to Login when registration succeeds
+    // Auto-navigate to Home when login succeeds
     LaunchedEffect(state.isSuccess) {
         if (state.isSuccess) {
-            onNavigateToLogin()
+            onNavigateToHome()
         }
     }
 
@@ -36,27 +36,16 @@ fun RegisterScreen(
     ) {
 
         Text(
-            text = "Register",
+            text = "Login",
             style = MaterialTheme.typography.headlineMedium
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         OutlinedTextField(
-            value = state.name,
-            onValueChange = {
-                viewModel.onEvent(RegisterEvent.NameChanged(it))
-            },
-            label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedTextField(
             value = state.email,
             onValueChange = {
-                viewModel.onEvent(RegisterEvent.EmailChanged(it))
+                viewModel.onEvent(LoginEvent.EmailChanged(it))
             },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth()
@@ -67,7 +56,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = state.password,
             onValueChange = {
-                viewModel.onEvent(RegisterEvent.PasswordChanged(it))
+                viewModel.onEvent(LoginEvent.PasswordChanged(it))
             },
             label = { Text("Password") },
             visualTransformation = PasswordVisualTransformation(),
@@ -78,7 +67,7 @@ fun RegisterScreen(
 
         Button(
             onClick = {
-                viewModel.onEvent(RegisterEvent.Submit)
+                viewModel.onEvent(LoginEvent.Submit)
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isLoading
@@ -89,7 +78,7 @@ fun RegisterScreen(
                     strokeWidth = 2.dp
                 )
             } else {
-                Text("Create Account")
+                Text("Login")
             }
         }
 
@@ -104,19 +93,19 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // "Already have an account? Login" link
+        // "Don't have an account? Register" link
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
                 text = buildAnnotatedString {
-                    append("Already have an account? ")
+                    append("Don't have an account? ")
                     withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                        append("Login")
+                        append("Register")
                     }
                 },
-                modifier = Modifier.clickable { onNavigateToLogin() }
+                modifier = Modifier.clickable { onNavigateToRegister() }
             )
         }
     }

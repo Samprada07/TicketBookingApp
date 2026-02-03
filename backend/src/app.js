@@ -1,9 +1,6 @@
-const pool = require("./db");
+require("dotenv").config();
 
-pool.query("SELECT NOW()", (err, res) => {
-  if (err) console.error(err);
-  else console.log("DB Time:", res.rows[0]);
-});
+const pool = require("./db");
 
 const express = require("express");
 const cors = require("cors");
@@ -30,7 +27,6 @@ app.use("/api/events", eventRoutes);
 
 const ticketRoutes = require("./routes/ticket.routes");
 app.use("/api/tickets", ticketRoutes);
-
 
 module.exports = app;
 
