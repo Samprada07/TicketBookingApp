@@ -1,10 +1,10 @@
 package com.example.ticketbookingapp.navigation
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.ticketbookingapp.appUi.events.EventListScreen
 import com.example.ticketbookingapp.appUi.login.LoginScreen
 import com.example.ticketbookingapp.appUi.register.RegisterScreen
 
@@ -12,7 +12,8 @@ import com.example.ticketbookingapp.appUi.register.RegisterScreen
 object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
-    const val HOME = "home"
+    const val EVENT_LIST = "event_list"
+    // EVENT_DETAIL and MY_TICKETS will be added in Part 3 & 4
 }
 
 @Composable
@@ -21,7 +22,7 @@ fun NavGraph() {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN          // app opens on Login
+        startDestination = Routes.LOGIN
     ) {
 
         // ── Login ─────────────────────────────────────────────────
@@ -31,8 +32,7 @@ fun NavGraph() {
                     navController.navigate(Routes.REGISTER)
                 },
                 onNavigateToHome = {
-                    navController.navigate(Routes.HOME) {
-                        // Clear the entire auth stack so back button doesn't return to Login
+                    navController.navigate(Routes.EVENT_LIST) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 }
@@ -44,16 +44,22 @@ fun NavGraph() {
             RegisterScreen(
                 onNavigateToLogin = {
                     navController.navigate(Routes.LOGIN) {
-                        // Remove Register from back stack
                         popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 }
             )
         }
 
-        // ── Home (placeholder — replace with your actual Home screen) ─
-        composable(Routes.HOME) {
-            Text(text = "Welcome! You are logged in. 🎉")
+        // ── Event List (Home) ─────────────────────────────────────
+        composable(Routes.EVENT_LIST) {
+            EventListScreen(
+                onEventClick = { eventId ->
+                    // Part 3: will navigate to event_detail/$eventId
+                },
+                onNavigateToMyTickets = {
+                    // Part 4: will navigate to my_tickets
+                }
+            )
         }
     }
 }
