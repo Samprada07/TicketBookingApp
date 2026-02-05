@@ -10,6 +10,7 @@ import com.example.ticketbookingapp.appUi.events.EventDetailScreen
 import com.example.ticketbookingapp.appUi.events.EventListScreen
 import com.example.ticketbookingapp.appUi.login.LoginScreen
 import com.example.ticketbookingapp.appUi.register.RegisterScreen
+import com.example.ticketbookingapp.appUi.tickets.MyTicketsScreen
 
 // ─── Route constants ─────────────────────────────────────────────
 object Routes {
@@ -17,7 +18,7 @@ object Routes {
     const val REGISTER = "register"
     const val EVENT_LIST = "event_list"
     const val EVENT_DETAIL = "event_detail/{eventId}"
-    // MY_TICKETS will be added in Part 4
+    const val MY_TICKETS = "my_tickets"
 }
 
 @Composable
@@ -61,7 +62,7 @@ fun NavGraph() {
                     navController.navigate("event_detail/$eventId")
                 },
                 onNavigateToMyTickets = {
-                    // Part 4: will navigate to my_tickets
+                    navController.navigate(Routes.MY_TICKETS)
                 }
             )
         }
@@ -77,6 +78,15 @@ fun NavGraph() {
 
             EventDetailScreen(
                 eventId = eventId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // ── My Tickets ────────────────────────────────────────────
+        composable(Routes.MY_TICKETS) {
+            MyTicketsScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
