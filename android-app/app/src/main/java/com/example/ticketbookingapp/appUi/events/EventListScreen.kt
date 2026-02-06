@@ -4,7 +4,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,11 +20,37 @@ import com.example.ticketbookingapp.viewmodel.EventListViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventListScreen(
-    onEventClick: (Int) -> Unit,           // Part 3 will wire this to EventDetail
-    onNavigateToMyTickets: () -> Unit,     // Part 4 will wire this to MyTickets
+    onEventClick: (Int) -> Unit,
+    onNavigateToMyTickets: () -> Unit,
+    onLogout: () -> Unit,
     viewModel: EventListViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // Logout confirmation dialog
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Logout", color = MaterialTheme.colorScheme.error)},
+            text = { Text("Are you sure you want to logout?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    }
+                ) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -33,6 +62,31 @@ fun EventListScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            Surface(
+                tonalElevation = 3.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = { showLogoutDialog = true }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Logout",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Logout",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
         }
     ) { paddingValues ->
 

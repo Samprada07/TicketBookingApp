@@ -1,6 +1,8 @@
 package com.example.ticketbookingapp.navigation
 
+import android.app.Application
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -10,10 +12,13 @@ import com.example.ticketbookingapp.appUi.events.EventDetailScreen
 import com.example.ticketbookingapp.appUi.events.EventListScreen
 import com.example.ticketbookingapp.appUi.login.LoginScreen
 import com.example.ticketbookingapp.appUi.register.RegisterScreen
+import com.example.ticketbookingapp.appUi.splash.SplashScreen
 import com.example.ticketbookingapp.appUi.tickets.MyTicketsScreen
+import com.example.ticketbookingapp.network.AuthManager
 
 // ─── Route constants ─────────────────────────────────────────────
 object Routes {
+    const val SPLASH = "splash"
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val EVENT_LIST = "event_list"
@@ -24,11 +29,29 @@ object Routes {
 @Composable
 fun NavGraph() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val authManager = AuthManager(context.applicationContext as Application)
 
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN
+        startDestination = Routes.SPLASH
     ) {
+
+        // ── Splash ────────────────────────────────────────────────
+        composable(Routes.SPLASH) {
+            SplashScreen(
+                onNavigateToLogin = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                },
+                onNavigateToEventList = {
+                    navController.navigate(Routes.EVENT_LIST) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                }
+            )
+        }
 
         // ── Login ─────────────────────────────────────────────────
         composable(Routes.LOGIN) {
@@ -63,6 +86,12 @@ fun NavGraph() {
                 },
                 onNavigateToMyTickets = {
                     navController.navigate(Routes.MY_TICKETS)
+                },
+                onLogout = {
+                    authManager.clearToken()
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }  // clear entire backstack
+                    }
                 }
             )
         }
