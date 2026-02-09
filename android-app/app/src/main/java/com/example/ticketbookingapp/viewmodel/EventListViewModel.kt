@@ -22,6 +22,9 @@ class EventListViewModel : ViewModel() {
     fun onEvent(event: EventListEvent) {
         when (event) {
             EventListEvent.Load, EventListEvent.Retry -> fetchEvents()
+            is EventListEvent.SearchQueryChanged -> {
+                _state.value = _state.value.copy(searchQuery = event.query)
+            }
         }
     }
 
