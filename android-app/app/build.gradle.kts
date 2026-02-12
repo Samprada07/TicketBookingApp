@@ -62,5 +62,5 @@ dependencies {
     implementation(libs.retrofit.gson)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.navigation.compose)
-
+    implementation(libs.zxing.core)
 }
