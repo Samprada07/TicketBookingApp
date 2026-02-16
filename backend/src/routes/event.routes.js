@@ -26,14 +26,14 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-// Create event (protected)
+// Create event (protected) - NOW INCLUDES image_url
 router.post("/", authenticateToken, async (req, res) => {
-    const { name, description, venue, start_time, end_time, total_seats } = req.body;
+    const { name, description, venue, start_time, end_time, total_seats, image_url } = req.body;
     try {
         const newEvent = await pool.query(
-            `INSERT INTO events (name, description, venue, start_time, end_time, total_seats, available_seats)
-             VALUES ($1, $2, $3, $4, $5, $6, $6) RETURNING *`,
-            [name, description, venue, start_time, end_time, total_seats]
+            `INSERT INTO events (name, description, venue, start_time, end_time, total_seats, available_seats, image_url)
+             VALUES ($1, $2, $3, $4, $5, $6, $6, $7) RETURNING *`,
+            [name, description, venue, start_time, end_time, total_seats, image_url || null]
         );
         res.json({ event: newEvent.rows[0] });
     } catch (err) {

@@ -10,7 +10,8 @@ data class Event(
     @SerializedName("start_time") val startTime: String,
     @SerializedName("end_time") val endTime: String,
     @SerializedName("total_seats") val totalSeats: Int,
-    @SerializedName("available_seats") val availableSeats: Int
+    @SerializedName("available_seats") val availableSeats: Int,
+    @SerializedName("image_url") val imageUrl: String?
 )
 
 data class EventListResponse(

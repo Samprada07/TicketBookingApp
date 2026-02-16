@@ -1,6 +1,5 @@
 package com.example.ticketbookingapp.navigation
 
-import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
@@ -30,7 +29,7 @@ object Routes {
 fun NavGraph() {
     val navController = rememberNavController()
     val context = LocalContext.current
-    val authManager = AuthManager(context.applicationContext as Application)
+    val authManager = AuthManager(context.applicationContext)
 
     NavHost(
         navController = navController,
@@ -90,7 +89,7 @@ fun NavGraph() {
                 onLogout = {
                     authManager.clearToken()
                     navController.navigate(Routes.LOGIN) {
-                        popUpTo(0) { inclusive = true }  // clear entire backstack
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )

@@ -1,16 +1,20 @@
 package com.example.ticketbookingapp.appUi.events
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.ticketbookingapp.viewmodel.EventDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,76 +78,101 @@ fun EventDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(24.dp)
+                .verticalScroll(rememberScrollState())
         ) {
-            Text(
-                text = event.name,
-                style = MaterialTheme.typography.headlineMedium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = event.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Venue & Time
-            Text(text = "📍 ${event.venue}", style = MaterialTheme.typography.bodyMedium)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "🕐 ${event.startTime}  –  ${event.endTime}", style = MaterialTheme.typography.bodyMedium)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Seats info
-            Text(
-                text = "Seats: ${event.availableSeats} available / ${event.totalSeats} total",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (event.availableSeats > 0)
-                    MaterialTheme.colorScheme.onSurface
-                else
-                    MaterialTheme.colorScheme.error
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── Seat number input (optional) ──────────────────────
-            OutlinedTextField(
-                value = state.seatNumber,
-                onValueChange = {
-                    viewModel.onEvent(EventDetailEvent.SeatNumberChanged(it))
-                },
-                label = { Text("Seat Number (optional)") },
-                placeholder = { Text("Leave blank for any seat") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
+            // Event Image (full width)
+            if (event.imageUrl != null) {
+                AsyncImage(
+                    model = event.imageUrl,
+                    contentDescription = event.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp),
+                    contentScale = ContentScale.Crop
                 )
-            )
+            } else {
+                // Placeholder if no image
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {}
+            }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── Book Button ───────────────────────────────────────
-            Button(
-                onClick = {
-                    viewModel.onEvent(EventDetailEvent.BookTicket(eventId))
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !state.isBooking && event.availableSeats > 0
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .padding(bottom = paddingValues.calculateBottomPadding())
             ) {
-                if (state.isBooking) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp
+                Text(
+                    text = event.name,
+                    style = MaterialTheme.typography.headlineMedium
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = event.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Venue & Time
+                Text(text = "📍 ${event.venue}", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = "🕐 ${event.startTime}  –  ${event.endTime}", style = MaterialTheme.typography.bodyMedium)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Seats info
+                Text(
+                    text = "Seats: ${event.availableSeats} available / ${event.totalSeats} total",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (event.availableSeats > 0)
+                        MaterialTheme.colorScheme.onSurface
+                    else
+                        MaterialTheme.colorScheme.error
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ── Seat number input (optional) ──────────────────────
+                OutlinedTextField(
+                    value = state.seatNumber,
+                    onValueChange = {
+                        viewModel.onEvent(EventDetailEvent.SeatNumberChanged(it))
+                    },
+                    label = { Text("Seat Number (optional)") },
+                    placeholder = { Text("Leave blank for any seat") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number
                     )
-                } else if (event.availableSeats > 0) {
-                    Text("Book Ticket")
-                } else {
-                    Text("No Seats Available")
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ── Book Button ───────────────────────────────────────
+                Button(
+                    onClick = {
+                        viewModel.onEvent(EventDetailEvent.BookTicket(eventId))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.isBooking && event.availableSeats > 0
+                ) {
+                    if (state.isBooking) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else if (event.availableSeats > 0) {
+                        Text("Book Ticket")
+                    } else {
+                        Text("No Seats Available")
+                    }
                 }
             }
         }

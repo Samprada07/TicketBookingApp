@@ -19,9 +19,7 @@ class MyTicketsViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val authManager = AuthManager(application)
 
-    init {
-        onEvent(MyTicketsEvent.Load)
-    }
+    // Removed init{} - will be triggered from screen's LaunchedEffect instead
 
     fun onEvent(event: MyTicketsEvent) {
         when (event) {

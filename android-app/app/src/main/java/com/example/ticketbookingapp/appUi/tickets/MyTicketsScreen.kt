@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
@@ -23,8 +23,8 @@ import com.example.ticketbookingapp.network.MyTicket
 import com.example.ticketbookingapp.viewmodel.MyTicketsViewModel
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
-import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
+import androidx.core.graphics.createBitmap
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,9 +35,14 @@ fun MyTicketsScreen(
     val state by viewModel.state.collectAsState()
     var selectedTicket by remember { mutableStateOf<MyTicket?>(null) }
 
+    // Load data when screen appears
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(MyTicketsEvent.Load)
+    }
+
     // Full-screen QR code dialog
     selectedTicket?.let { ticket ->
-        Dialog(onDismissRequest = { selectedTicket = null }) {
+        Dialog(onDismissRequest = { }) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -56,7 +61,7 @@ fun MyTicketsScreen(
                             text = "Ticket QR Code",
                             style = MaterialTheme.typography.titleLarge
                         )
-                        IconButton(onClick = { selectedTicket = null }) {
+                        IconButton(onClick = { }) {
                             Icon(Icons.Default.Close, contentDescription = "Close")
                         }
                     }
@@ -95,7 +100,7 @@ fun MyTicketsScreen(
                 title = { Text("My Tickets") },
                 navigationIcon = {
                     IconButton(onClick = { onNavigateBack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -155,7 +160,7 @@ fun MyTicketsScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { selectedTicket = ticket }
+                            .clickable { }
                     ) {
                         Row(
                             modifier = Modifier.padding(16.dp),
@@ -228,7 +233,7 @@ private fun generateQRCode(text: String, size: Int): Bitmap? {
             }
         }
         bitmap
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 }

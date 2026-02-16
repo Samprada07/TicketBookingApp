@@ -13,6 +13,7 @@ coroutinesAndroid = "1.7.3"
 gsonConverter = "2.9.0"
 navigationCompose = "2.8.0"
 zxingCore = "3.5.3"
+coilCompose = "2.5.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,6 +36,7 @@ retrofit-gson = { group = "com.squareup.retrofit2", name = "converter-gson", ver
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutinesAndroid" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxingCore" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coilCompose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -1,5 +1,6 @@
 package com.example.ticketbookingapp.appUi.events
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,8 +15,10 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.ticketbookingapp.viewmodel.EventListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,12 +35,16 @@ fun EventListScreen(
     // Logout confirmation dialog
     if (showLogoutDialog) {
         AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
+            onDismissRequest = {
+                Log.d("LOGOUT", "Dialog dismissed")
+                showLogoutDialog = false
+            },
             title = { Text("Logout") },
             text = { Text("Are you sure you want to logout?") },
             confirmButton = {
                 TextButton(
                     onClick = {
+                        Log.d("LOGOUT", "Confirmed - calling onLogout()")
                         showLogoutDialog = false
                         onLogout()
                     }
@@ -46,7 +53,10 @@ fun EventListScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
+                TextButton(onClick = {
+                    Log.d("LOGOUT", "Cancelled")
+                    showLogoutDialog = false
+                }) {
                     Text("Cancel")
                 }
             }
@@ -74,9 +84,12 @@ fun EventListScreen(
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    TextButton(onClick = { showLogoutDialog = true }) {
+                    TextButton(onClick = {
+                        Log.d("LOGOUT", "Logout button clicked")
+                        showLogoutDialog = true
+                    }) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
+                            Icons.AutoMirrored.Default.ExitToApp,
                             contentDescription = "Logout",
                             tint = MaterialTheme.colorScheme.error
                         )
@@ -174,26 +187,53 @@ fun EventListScreen(
                                 .fillMaxWidth()
                                 .clickable { onEventClick(event.id) }
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = event.name,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = event.venue,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Seats available: ${event.availableSeats} / ${event.totalSeats}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (event.availableSeats > 0)
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    else
-                                        MaterialTheme.colorScheme.error
-                                )
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                // Event Image
+                                if (event.imageUrl != null) {
+                                    AsyncImage(
+                                        model = event.imageUrl,
+                                        contentDescription = event.name,
+                                        modifier = Modifier
+                                            .width(120.dp)
+                                            .height(120.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    // Placeholder if no image
+                                    Surface(
+                                        modifier = Modifier
+                                            .width(120.dp)
+                                            .height(120.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant
+                                    ) {}
+                                }
+
+                                // Event Info
+                                Column(
+                                    modifier = Modifier
+                                        .padding(16.dp)
+                                        .weight(1f)
+                                ) {
+                                    Text(
+                                        text = event.name,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = event.venue,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Seats available: ${event.availableSeats} / ${event.totalSeats}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (event.availableSeats > 0)
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        else
+                                            MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
                         }
                     }
