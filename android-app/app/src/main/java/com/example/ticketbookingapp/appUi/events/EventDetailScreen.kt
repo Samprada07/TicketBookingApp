@@ -11,10 +11,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.ticketbookingapp.network.AuthManager
 import com.example.ticketbookingapp.viewmodel.EventDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,6 +28,10 @@ fun EventDetailScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    val context = LocalContext.current
+    val authManager = remember { AuthManager(context.applicationContext) }
+    val isAdmin = authManager.isAdmin()
 
     // Load event on first composition
     LaunchedEffect(eventId) {
@@ -74,13 +80,13 @@ fun EventDetailScreen(
 
         val event = state.event!!
 
-        // ── Event Detail + Book Form ──────────────────────────────
+        // ── Event Detail ──────────────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Event Image (full width)
+            // Event Image
             if (event.imageUrl != null) {
                 AsyncImage(
                     model = event.imageUrl,
@@ -91,7 +97,6 @@ fun EventDetailScreen(
                     contentScale = ContentScale.Crop
                 )
             } else {
-                // Placeholder if no image
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -120,14 +125,12 @@ fun EventDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Venue & Time
                 Text(text = "📍 ${event.venue}", style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(text = "🕐 ${event.startTime}  –  ${event.endTime}", style = MaterialTheme.typography.bodyMedium)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Seats info
                 Text(
                     text = "Seats: ${event.availableSeats} available / ${event.totalSeats} total",
                     style = MaterialTheme.typography.bodyMedium,
@@ -139,39 +142,55 @@ fun EventDetailScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ── Seat number input (optional) ──────────────────────
-                OutlinedTextField(
-                    value = state.seatNumber,
-                    onValueChange = {
-                        viewModel.onEvent(EventDetailEvent.SeatNumberChanged(it))
-                    },
-                    label = { Text("Seat Number (optional)") },
-                    placeholder = { Text("Leave blank for any seat") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // ── Book Button ───────────────────────────────────────
-                Button(
-                    onClick = {
-                        viewModel.onEvent(EventDetailEvent.BookTicket(eventId))
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.isBooking && event.availableSeats > 0
-                ) {
-                    if (state.isBooking) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp
+                // ── Admin: show info message instead of booking ───
+                if (isAdmin) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "👮 Admin View — Booking is disabled for admins.",
+                            modifier = Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
-                    } else if (event.availableSeats > 0) {
-                        Text("Book Ticket")
-                    } else {
-                        Text("No Seats Available")
+                    }
+                } else {
+                    // ── User: show seat input and book button ─────
+                    OutlinedTextField(
+                        value = state.seatNumber,
+                        onValueChange = {
+                            viewModel.onEvent(EventDetailEvent.SeatNumberChanged(it))
+                        },
+                        label = { Text("Seat Number (optional)") },
+                        placeholder = { Text("Leave blank for any seat") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+                        onClick = {
+                            viewModel.onEvent(EventDetailEvent.BookTicket(eventId))
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isBooking && event.availableSeats > 0
+                    ) {
+                        if (state.isBooking) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else if (event.availableSeats > 0) {
+                            Text("Book Ticket")
+                        } else {
+                            Text("No Seats Available")
+                        }
                     }
                 }
             }

@@ -15,6 +15,14 @@ class AuthManager(context: Context) {
 
     fun getToken(): String? = prefs.getString("jwt_token", null)
 
+    fun saveUserRole(role: String) {
+        prefs.edit { putString("user_role", role) }
+    }
+
+    fun getUserRole(): String? = prefs.getString("user_role", "user")
+
+    fun isAdmin(): Boolean = getUserRole() == "admin"
+
     fun clearToken() {
         prefs.edit { clear() }
     }

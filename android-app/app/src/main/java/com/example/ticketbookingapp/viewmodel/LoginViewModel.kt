@@ -68,6 +68,12 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                         Log.d("JWT", "Saved token: $token")
                     } ?: Log.d("JWT", "No token in response")
 
+                    // NEW: Save user role
+                    body?.user?.role?.let { role ->
+                        authManager.saveUserRole(role)
+                        Log.d("AUTH", "User role: $role")
+                    }
+
                     // ✅ Signal success → NavGraph will navigate to Home
                     _state.value = _state.value.copy(isLoading = false, isSuccess = true)
 

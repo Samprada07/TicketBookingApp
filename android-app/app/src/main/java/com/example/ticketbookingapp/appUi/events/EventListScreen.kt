@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -16,9 +17,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.ticketbookingapp.network.AuthManager
 import com.example.ticketbookingapp.viewmodel.EventListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,11 +29,16 @@ import com.example.ticketbookingapp.viewmodel.EventListViewModel
 fun EventListScreen(
     onEventClick: (Int) -> Unit,
     onNavigateToMyTickets: () -> Unit,
+    onNavigateToAdminPanel: () -> Unit,  // NEW
     onLogout: () -> Unit,
     viewModel: EventListViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val authManager = remember { AuthManager(context.applicationContext) }
+    val isAdmin = authManager.isAdmin()
 
     // Logout confirmation dialog
     if (showLogoutDialog) {
@@ -68,8 +76,17 @@ fun EventListScreen(
             TopAppBar(
                 title = { Text("Events") },
                 actions = {
-                    TextButton(onClick = { onNavigateToMyTickets() }) {
-                        Text("My Tickets")
+                    // Admin Panel button (only for admins)
+                    if (isAdmin) {
+                        IconButton(onClick = { onNavigateToAdminPanel() }) {
+                            Icon(Icons.Default.AccountBox, contentDescription = "Admin Panel")
+                        }
+                    }
+                    // My Tickets button (only for non-admins)
+                    if (!isAdmin) {
+                        TextButton(onClick = { onNavigateToMyTickets() }) {
+                            Text("My Tickets")
+                        }
                     }
                 }
             )

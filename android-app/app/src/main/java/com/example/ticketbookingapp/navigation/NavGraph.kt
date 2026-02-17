@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.ticketbookingapp.appUi.admin.AdminPanelScreen
 import com.example.ticketbookingapp.appUi.events.EventDetailScreen
 import com.example.ticketbookingapp.appUi.events.EventListScreen
 import com.example.ticketbookingapp.appUi.login.LoginScreen
@@ -23,6 +24,7 @@ object Routes {
     const val EVENT_LIST = "event_list"
     const val EVENT_DETAIL = "event_detail/{eventId}"
     const val MY_TICKETS = "my_tickets"
+    const val ADMIN_PANEL = "admin_panel"
 }
 
 @Composable
@@ -86,6 +88,9 @@ fun NavGraph() {
                 onNavigateToMyTickets = {
                     navController.navigate(Routes.MY_TICKETS)
                 },
+                onNavigateToAdminPanel = {
+                    navController.navigate(Routes.ADMIN_PANEL)
+                },
                 onLogout = {
                     authManager.clearToken()
                     navController.navigate(Routes.LOGIN) {
@@ -117,6 +122,18 @@ fun NavGraph() {
             MyTicketsScreen(
                 onNavigateBack = {
                     navController.popBackStack()
+                }
+            )
+        }
+
+        // ── Admin Panel ───────────────────────────────────────────
+        composable(Routes.ADMIN_PANEL) {
+            AdminPanelScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onCreateEvent = {
+                    // TODO: Navigate to Create Event screen
                 }
             )
         }
