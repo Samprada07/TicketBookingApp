@@ -8,6 +8,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.ticketbookingapp.appUi.admin.AdminPanelScreen
+import com.example.ticketbookingapp.appUi.admin.CreateEventScreen
+import com.example.ticketbookingapp.appUi.admin.EventBookingsScreen
 import com.example.ticketbookingapp.appUi.events.EventDetailScreen
 import com.example.ticketbookingapp.appUi.events.EventListScreen
 import com.example.ticketbookingapp.appUi.login.LoginScreen
@@ -16,7 +18,6 @@ import com.example.ticketbookingapp.appUi.splash.SplashScreen
 import com.example.ticketbookingapp.appUi.tickets.MyTicketsScreen
 import com.example.ticketbookingapp.network.AuthManager
 
-// ─── Route constants ─────────────────────────────────────────────
 object Routes {
     const val SPLASH = "splash"
     const val LOGIN = "login"
@@ -25,6 +26,8 @@ object Routes {
     const val EVENT_DETAIL = "event_detail/{eventId}"
     const val MY_TICKETS = "my_tickets"
     const val ADMIN_PANEL = "admin_panel"
+    const val CREATE_EVENT = "create_event"
+    const val EVENT_BOOKINGS = "event_bookings/{eventId}/{eventName}"
 }
 
 @Composable
@@ -108,33 +111,51 @@ fun NavGraph() {
             )
         ) { backStackEntry ->
             val eventId = backStackEntry.arguments?.getInt("eventId") ?: return@composable
-
             EventDetailScreen(
                 eventId = eventId,
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
         // ── My Tickets ────────────────────────────────────────────
         composable(Routes.MY_TICKETS) {
             MyTicketsScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
         // ── Admin Panel ───────────────────────────────────────────
         composable(Routes.ADMIN_PANEL) {
             AdminPanelScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-                onCreateEvent = {
-                    // TODO: Navigate to Create Event screen
+                onNavigateBack = { navController.popBackStack() },
+                onCreateEvent = { navController.navigate(Routes.CREATE_EVENT) },
+                onViewBookings = { eventId, eventName ->
+                    navController.navigate("event_bookings/$eventId/$eventName")
                 }
+            )
+        }
+
+        // ── Create Event ──────────────────────────────────────────
+        composable(Routes.CREATE_EVENT) {
+            CreateEventScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── Event Bookings ────────────────────────────────────────
+        composable(
+            route = Routes.EVENT_BOOKINGS,
+            arguments = listOf(
+                navArgument("eventId") { type = NavType.IntType },
+                navArgument("eventName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getInt("eventId") ?: return@composable
+            val eventName = backStackEntry.arguments?.getString("eventName") ?: ""
+            EventBookingsScreen(
+                eventId = eventId,
+                eventName = eventName,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

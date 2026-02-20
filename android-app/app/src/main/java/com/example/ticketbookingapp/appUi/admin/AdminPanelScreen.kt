@@ -14,16 +14,45 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.ticketbookingapp.viewmodel.EventListViewModel
+import com.example.ticketbookingapp.network.Event
+import com.example.ticketbookingapp.viewmodel.AdminViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminPanelScreen(
     onNavigateBack: () -> Unit,
-    onCreateEvent: () -> Unit,  // Navigate to Create Event form
-    viewModel: EventListViewModel = viewModel()
+    onCreateEvent: () -> Unit,
+    onViewBookings: (eventId: Int, eventName: String) -> Unit,
+    viewModel: AdminViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    var eventToDelete by remember { mutableStateOf<Event?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadEvents()
+    }
+
+    // Delete confirmation dialog
+    eventToDelete?.let { event ->
+        AlertDialog(
+            onDismissRequest = { eventToDelete = null },
+            title = { Text("Delete Event") },
+            text = { Text("Are you sure you want to delete \"${event.name}\"? This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteEvent(event.id)
+                    eventToDelete = null
+                }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { eventToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -44,11 +73,15 @@ fun AdminPanelScreen(
     ) { paddingValues ->
 
         if (state.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
+            }
+            return@Scaffold
+        }
+
+        if (state.error != null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(text = state.error!!, color = MaterialTheme.colorScheme.error)
             }
             return@Scaffold
         }
@@ -56,12 +89,20 @@ fun AdminPanelScreen(
         LazyColumn(
             contentPadding = PaddingValues(
                 top = paddingValues.calculateTopPadding() + 16.dp,
-                bottom = paddingValues.calculateBottomPadding() + 16.dp,
+                bottom = paddingValues.calculateBottomPadding() + 80.dp,
                 start = 16.dp,
                 end = 16.dp
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            item {
+                Text(
+                    text = "${state.events.size} event(s)",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
             items(state.events) { event ->
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -71,21 +112,28 @@ fun AdminPanelScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "${event.venue} • ${event.startTime}",
+                            text = "📍 ${event.venue}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "🪑 ${event.availableSeats} / ${event.totalSeats} seats available",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            TextButton(onClick = { /* TODO: View Bookings */ }) {
+                            TextButton(onClick = { onViewBookings(event.id, event.name) }) {
                                 Icon(Icons.Default.DateRange, contentDescription = null)
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("View Bookings")
                             }
-                            IconButton(onClick = { /* TODO: Delete Event */ }) {
+                            IconButton(onClick = { eventToDelete = event }) {
                                 Icon(
                                     Icons.Default.Delete,
                                     contentDescription = "Delete",
