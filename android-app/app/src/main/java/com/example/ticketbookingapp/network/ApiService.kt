@@ -1,11 +1,16 @@
 package com.example.ticketbookingapp.network
 
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
 
 data class LoginRequest(
     val email: String,
     val password: String
+)
+
+data class UploadImageResponse(
+    val imageUrl: String
 )
 
 interface ApiService {
@@ -31,6 +36,13 @@ interface ApiService {
         @Body request: CreateEventRequest
     ): Response<EventDetailResponse>
 
+    @PUT("api/events/{id}")  // NEW
+    suspend fun updateEvent(
+        @Header("Authorization") token: String,
+        @Path("id") id: Int,
+        @Body request: CreateEventRequest
+    ): Response<EventDetailResponse>
+
     @DELETE("api/events/{id}")
     suspend fun deleteEvent(
         @Header("Authorization") token: String,
@@ -42,6 +54,14 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: Int
     ): Response<BookingsResponse>
+
+    // ── Upload (admin only) ──────────────────────────────────────
+    @Multipart  // NEW
+    @POST("api/upload")
+    suspend fun uploadImage(
+        @Header("Authorization") token: String,
+        @Part image: MultipartBody.Part
+    ): Response<UploadImageResponse>
 
     // ── Tickets ─────────────────────────────────────────────────
     @POST("api/tickets/book")

@@ -19,6 +19,8 @@ app.get("/health", (req, res) => {
   });
 });
 
+app.use('/uploads', express.static('uploads'));
+
 const authRoutes = require("./routes/auth.routes");
 app.use("/api/auth", authRoutes);
 
@@ -27,6 +29,9 @@ app.use("/api/events", eventRoutes);
 
 const ticketRoutes = require("./routes/ticket.routes");
 app.use("/api/tickets", ticketRoutes);
+
+const uploadRoutes = require("./routes/upload.routes");
+app.use("/api/upload", uploadRoutes);
 
 module.exports = app;
 

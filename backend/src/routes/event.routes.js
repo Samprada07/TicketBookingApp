@@ -43,6 +43,30 @@ router.post("/", isAdmin, async (req, res) => {
     }
 });
 
+// Update event (ADMIN ONLY) - NEW
+router.put("/:id", isAdmin, async (req, res) => {
+    const { name, description, venue, start_time, end_time, total_seats, image_url } = req.body;
+    try {
+        const updatedEvent = await pool.query(
+            `UPDATE events
+             SET name = $1, description = $2, venue = $3, start_time = $4,
+                 end_time = $5, total_seats = $6, image_url = $7
+             WHERE id = $8
+             RETURNING *`,
+            [name, description, venue, start_time, end_time, total_seats, image_url || null, req.params.id]
+        );
+
+        if (updatedEvent.rows.length === 0) {
+            return res.status(404).json({ error: "Event not found" });
+        }
+
+        res.json({ event: updatedEvent.rows[0] });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Server error");
+    }
+});
+
 // Delete event (ADMIN ONLY)
 router.delete("/:id", isAdmin, async (req, res) => {
     try {

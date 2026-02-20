@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +23,7 @@ import com.example.ticketbookingapp.viewmodel.AdminViewModel
 fun AdminPanelScreen(
     onNavigateBack: () -> Unit,
     onCreateEvent: () -> Unit,
+    onEditEvent: (eventId: Int) -> Unit,  // NEW
     onViewBookings: (eventId: Int, eventName: String) -> Unit,
     viewModel: AdminViewModel = viewModel()
 ) {
@@ -32,12 +34,11 @@ fun AdminPanelScreen(
         viewModel.loadEvents()
     }
 
-    // Delete confirmation dialog
     eventToDelete?.let { event ->
         AlertDialog(
             onDismissRequest = { eventToDelete = null },
             title = { Text("Delete Event") },
-            text = { Text("Are you sure you want to delete \"${event.name}\"? This cannot be undone.") },
+            text = { Text("Delete \"${event.name}\"? This cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteEvent(event.id)
@@ -106,10 +107,7 @@ fun AdminPanelScreen(
             items(state.events) { event ->
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = event.name,
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        Text(text = event.name, style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "📍 ${event.venue}",
@@ -118,7 +116,7 @@ fun AdminPanelScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "🪑 ${event.availableSeats} / ${event.totalSeats} seats available",
+                            text = "🪑 ${event.availableSeats} / ${event.totalSeats} seats",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -128,10 +126,17 @@ fun AdminPanelScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            TextButton(onClick = { onViewBookings(event.id, event.name) }) {
-                                Icon(Icons.Default.DateRange, contentDescription = null)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("View Bookings")
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(onClick = { onEditEvent(event.id) }) {
+                                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Edit")
+                                }
+                                OutlinedButton(onClick = { onViewBookings(event.id, event.name) }) {
+                                    Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Bookings")
+                                }
                             }
                             IconButton(onClick = { eventToDelete = event }) {
                                 Icon(

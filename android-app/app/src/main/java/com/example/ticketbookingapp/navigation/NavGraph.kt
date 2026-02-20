@@ -26,7 +26,7 @@ object Routes {
     const val EVENT_DETAIL = "event_detail/{eventId}"
     const val MY_TICKETS = "my_tickets"
     const val ADMIN_PANEL = "admin_panel"
-    const val CREATE_EVENT = "create_event"
+    const val CREATE_EVENT = "create_event?eventId={eventId}"
     const val EVENT_BOOKINGS = "event_bookings/{eventId}/{eventName}"
 }
 
@@ -128,7 +128,10 @@ fun NavGraph() {
         composable(Routes.ADMIN_PANEL) {
             AdminPanelScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onCreateEvent = { navController.navigate(Routes.CREATE_EVENT) },
+                onCreateEvent = { navController.navigate("create_event") },
+                onEditEvent = { eventId ->
+                    navController.navigate("create_event?eventId=$eventId")
+                },
                 onViewBookings = { eventId, eventName ->
                     navController.navigate("event_bookings/$eventId/$eventName")
                 }
@@ -136,8 +139,21 @@ fun NavGraph() {
         }
 
         // ── Create Event ──────────────────────────────────────────
-        composable(Routes.CREATE_EVENT) {
+        composable(
+            route = Routes.CREATE_EVENT,
+            arguments = listOf(
+                navArgument("eventId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val eventIdString = backStackEntry.arguments?.getString("eventId")
+            val eventId = eventIdString?.toIntOrNull()
+
             CreateEventScreen(
+                eventId = eventId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
