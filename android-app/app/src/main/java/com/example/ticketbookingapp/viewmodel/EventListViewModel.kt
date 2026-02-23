@@ -25,6 +25,9 @@ class EventListViewModel : ViewModel() {
             is EventListEvent.SearchQueryChanged -> {
                 _state.value = _state.value.copy(searchQuery = event.query)
             }
+            is EventListEvent.SortByChanged -> {
+                _state.value = _state.value.copy(sortBy = event.sortBy)
+            }
         }
     }
 

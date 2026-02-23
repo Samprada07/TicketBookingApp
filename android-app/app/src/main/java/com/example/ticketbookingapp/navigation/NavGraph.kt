@@ -13,6 +13,7 @@ import com.example.ticketbookingapp.appUi.admin.EventBookingsScreen
 import com.example.ticketbookingapp.appUi.events.EventDetailScreen
 import com.example.ticketbookingapp.appUi.events.EventListScreen
 import com.example.ticketbookingapp.appUi.login.LoginScreen
+import com.example.ticketbookingapp.appUi.profile.ProfileScreen
 import com.example.ticketbookingapp.appUi.register.RegisterScreen
 import com.example.ticketbookingapp.appUi.splash.SplashScreen
 import com.example.ticketbookingapp.appUi.tickets.MyTicketsScreen
@@ -28,6 +29,7 @@ object Routes {
     const val ADMIN_PANEL = "admin_panel"
     const val CREATE_EVENT = "create_event?eventId={eventId}"
     const val EVENT_BOOKINGS = "event_bookings/{eventId}/{eventName}"
+    const val PROFILE = "profile"
 }
 
 @Composable
@@ -93,6 +95,9 @@ fun NavGraph() {
                 },
                 onNavigateToAdminPanel = {
                     navController.navigate(Routes.ADMIN_PANEL)
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Routes.PROFILE)
                 },
                 onLogout = {
                     authManager.clearToken()
@@ -171,6 +176,12 @@ fun NavGraph() {
             EventBookingsScreen(
                 eventId = eventId,
                 eventName = eventName,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        // ── User Profile ────────────────────────────────────────
+        composable(Routes.PROFILE) {
+            ProfileScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

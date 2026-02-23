@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -29,7 +31,8 @@ import com.example.ticketbookingapp.viewmodel.EventListViewModel
 fun EventListScreen(
     onEventClick: (Int) -> Unit,
     onNavigateToMyTickets: () -> Unit,
-    onNavigateToAdminPanel: () -> Unit,  // NEW
+    onNavigateToAdminPanel: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     onLogout: () -> Unit,
     viewModel: EventListViewModel = viewModel()
 ) {
@@ -39,13 +42,12 @@ fun EventListScreen(
     val context = LocalContext.current
     val authManager = remember { AuthManager(context.applicationContext) }
     val isAdmin = authManager.isAdmin()
+    val userName = authManager.getUserName() ?: "User"
 
-    // Logout confirmation dialog
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = {
                 Log.d("LOGOUT", "Dialog dismissed")
-                showLogoutDialog = false
             },
             title = { Text("Logout") },
             text = { Text("Are you sure you want to logout?") },
@@ -53,7 +55,6 @@ fun EventListScreen(
                 TextButton(
                     onClick = {
                         Log.d("LOGOUT", "Confirmed - calling onLogout()")
-                        showLogoutDialog = false
                         onLogout()
                     }
                 ) {
@@ -63,7 +64,6 @@ fun EventListScreen(
             dismissButton = {
                 TextButton(onClick = {
                     Log.d("LOGOUT", "Cancelled")
-                    showLogoutDialog = false
                 }) {
                     Text("Cancel")
                 }
@@ -74,15 +74,21 @@ fun EventListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Events") },
+                title = {
+                    Text("Hi, ${userName.replaceFirstChar { it.titlecase() }}")
+                },
                 actions = {
-                    // Admin Panel button (only for admins)
+                    // Profile button (only for non-admins)
+                    if (!isAdmin) {
+                        IconButton(onClick = { onNavigateToProfile() }) {
+                            Icon(Icons.Default.Person, contentDescription = "Profile")
+                        }
+                    }
                     if (isAdmin) {
                         IconButton(onClick = { onNavigateToAdminPanel() }) {
                             Icon(Icons.Default.AccountBox, contentDescription = "Admin Panel")
                         }
                     }
-                    // My Tickets button (only for non-admins)
                     if (!isAdmin) {
                         TextButton(onClick = { onNavigateToMyTickets() }) {
                             Text("My Tickets")
@@ -106,7 +112,7 @@ fun EventListScreen(
                         showLogoutDialog = true
                     }) {
                         Icon(
-                            Icons.AutoMirrored.Default.ExitToApp,
+                            Icons.AutoMirrored.Filled.ExitToApp,
                             contentDescription = "Logout",
                             tint = MaterialTheme.colorScheme.error
                         )
@@ -126,7 +132,41 @@ fun EventListScreen(
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
         ) {
-            // ── Search Bar ────────────────────────────────────────
+            // Sort chips
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),  // keeps nice spacing
+                verticalAlignment = Alignment.CenterVertically       // aligns text & chips vertically centered
+            ) {
+                Text(
+                    text = "Filter:",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),        // or bodyMedium / titleSmall – choose what fits best
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, // slightly muted for label feel
+                    modifier = Modifier.align(Alignment.CenterVertically)
+                )
+
+                FilterChip(
+                    selected = state.sortBy == SortOption.DATE,
+                    onClick = { viewModel.onEvent(EventListEvent.SortByChanged(SortOption.DATE)) },
+                    label = { Text("Date") }
+                )
+
+                FilterChip(
+                    selected = state.sortBy == SortOption.NAME,
+                    onClick = { viewModel.onEvent(EventListEvent.SortByChanged(SortOption.NAME)) },
+                    label = { Text("Name") }
+                )
+
+                FilterChip(
+                    selected = state.sortBy == SortOption.SEATS,
+                    onClick = { viewModel.onEvent(EventListEvent.SortByChanged(SortOption.SEATS)) },
+                    label = { Text("Seats") }
+                )
+            }
+
+            // Search Bar
             OutlinedTextField(
                 value = state.searchQuery,
                 onValueChange = { viewModel.onEvent(EventListEvent.SearchQueryChanged(it)) },
@@ -149,7 +189,7 @@ fun EventListScreen(
                 singleLine = true
             )
 
-            // ── Error + Retry ─────────────────────────────────────
+            // Error + Retry
             if (state.error != null && state.events.isEmpty()) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -168,7 +208,7 @@ fun EventListScreen(
                 return@Column
             }
 
-            // ── No Results ────────────────────────────────────────
+            // No Results
             if (state.filteredEvents.isEmpty() && state.searchQuery.isNotEmpty() && !state.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -183,7 +223,7 @@ fun EventListScreen(
                 return@Column
             }
 
-            // ── Pull-to-Refresh + Event List ─────────────────────
+            // Pull-to-Refresh + Event List
             PullToRefreshBox(
                 isRefreshing = state.isLoading,
                 onRefresh = { viewModel.onEvent(EventListEvent.Retry) },
@@ -205,7 +245,6 @@ fun EventListScreen(
                                 .clickable { onEventClick(event.id) }
                         ) {
                             Row(modifier = Modifier.fillMaxWidth()) {
-                                // Event Image
                                 if (event.imageUrl != null) {
                                     AsyncImage(
                                         model = event.imageUrl,
@@ -216,7 +255,6 @@ fun EventListScreen(
                                         contentScale = ContentScale.Crop
                                     )
                                 } else {
-                                    // Placeholder if no image
                                     Surface(
                                         modifier = Modifier
                                             .width(120.dp)
@@ -225,7 +263,6 @@ fun EventListScreen(
                                     ) {}
                                 }
 
-                                // Event Info
                                 Column(
                                     modifier = Modifier
                                         .padding(16.dp)

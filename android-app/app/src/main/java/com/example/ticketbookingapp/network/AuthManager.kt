@@ -23,6 +23,17 @@ class AuthManager(context: Context) {
 
     fun isAdmin(): Boolean = getUserRole() == "admin"
 
+    fun saveUserInfo(name: String, email: String) {
+        prefs.edit {
+            putString("user_name", name)
+            putString("user_email", email)
+        }
+    }
+
+    fun getUserName(): String? = prefs.getString("user_name", null)
+
+    fun getUserEmail(): String? = prefs.getString("user_email", null)
+
     fun clearToken() {
         prefs.edit { clear() }
     }

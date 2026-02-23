@@ -39,7 +39,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         val email = _state.value.email.trim()
         val password = _state.value.password
 
-        // Basic client-side validation
         if (email.isEmpty()) {
             _state.value = _state.value.copy(error = "Email is required")
             return
@@ -68,17 +67,19 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                         Log.d("JWT", "Saved token: $token")
                     } ?: Log.d("JWT", "No token in response")
 
-                    // NEW: Save user role
                     body?.user?.role?.let { role ->
                         authManager.saveUserRole(role)
                         Log.d("AUTH", "User role: $role")
                     }
 
-                    // ✅ Signal success → NavGraph will navigate to Home
+                    body?.user?.let { user ->
+                        authManager.saveUserInfo(user.name, user.email)
+                        Log.d("AUTH", "Saved user info: ${user.name}, ${user.email}")
+                    }
+
                     _state.value = _state.value.copy(isLoading = false, isSuccess = true)
 
                 } else {
-                    // Parse actual error message from backend JSON: { "error": "..." }
                     val errorMessage = try {
                         val json = JSONObject(response.errorBody()?.string() ?: "{}")
                         json.getString("error")
