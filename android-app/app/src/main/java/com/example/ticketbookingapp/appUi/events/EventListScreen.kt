@@ -19,8 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.ticketbookingapp.network.AuthManager
@@ -44,10 +45,25 @@ fun EventListScreen(
     val isAdmin = authManager.isAdmin()
     val userName = authManager.getUserName() ?: "User"
 
+    // Auto-refresh when screen becomes visible (after returning from admin panel)
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onEvent(EventListEvent.Retry)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = {
                 Log.d("LOGOUT", "Dialog dismissed")
+                showLogoutDialog = false
             },
             title = { Text("Logout") },
             text = { Text("Are you sure you want to logout?") },
@@ -55,6 +71,7 @@ fun EventListScreen(
                 TextButton(
                     onClick = {
                         Log.d("LOGOUT", "Confirmed - calling onLogout()")
+                        showLogoutDialog = false
                         onLogout()
                     }
                 ) {
@@ -64,6 +81,7 @@ fun EventListScreen(
             dismissButton = {
                 TextButton(onClick = {
                     Log.d("LOGOUT", "Cancelled")
+                    showLogoutDialog = false
                 }) {
                     Text("Cancel")
                 }
@@ -74,9 +92,7 @@ fun EventListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Hi, ${userName.replaceFirstChar { it.titlecase() }}")
-                },
+                title = { Text("Hi, $userName") },
                 actions = {
                     // Profile button (only for non-admins)
                     if (!isAdmin) {
@@ -126,7 +142,6 @@ fun EventListScreen(
             }
         }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -137,28 +152,18 @@ fun EventListScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),  // keeps nice spacing
-                verticalAlignment = Alignment.CenterVertically       // aligns text & chips vertically centered
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Filter:",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),        // or bodyMedium / titleSmall – choose what fits best
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, // slightly muted for label feel
-                    modifier = Modifier.align(Alignment.CenterVertically)
-                )
-
                 FilterChip(
                     selected = state.sortBy == SortOption.DATE,
                     onClick = { viewModel.onEvent(EventListEvent.SortByChanged(SortOption.DATE)) },
                     label = { Text("Date") }
                 )
-
                 FilterChip(
                     selected = state.sortBy == SortOption.NAME,
                     onClick = { viewModel.onEvent(EventListEvent.SortByChanged(SortOption.NAME)) },
                     label = { Text("Name") }
                 )
-
                 FilterChip(
                     selected = state.sortBy == SortOption.SEATS,
                     onClick = { viewModel.onEvent(EventListEvent.SortByChanged(SortOption.SEATS)) },

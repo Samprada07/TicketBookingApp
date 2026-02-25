@@ -1,5 +1,6 @@
 package com.example.ticketbookingapp.network
 
+import com.example.ticketbookingapp.viewmodel.UpdateProfileRequest
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
@@ -11,6 +12,16 @@ data class LoginRequest(
 
 data class UploadImageResponse(
     val imageUrl: String
+)
+
+data class UpdateProfileRequest(
+    val name: String,
+    val email: String
+)
+
+data class UpdateProfileResponse(
+    val user: User,
+    val message: String
 )
 
 interface ApiService {
@@ -74,4 +85,11 @@ interface ApiService {
     suspend fun getMyTickets(
         @Header("Authorization") token: String
     ): Response<MyTicketsResponse>
+
+    // ── Edit User Profile ─────────────────────────────────────────────────
+    @PUT("api/auth/profile")
+    suspend fun updateProfile(
+        @Header("Authorization") token: String,
+        @Body request: UpdateProfileRequest
+    ): Response<UpdateProfileResponse>
 }

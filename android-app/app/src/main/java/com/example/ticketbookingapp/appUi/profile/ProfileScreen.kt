@@ -2,48 +2,76 @@ package com.example.ticketbookingapp.appUi.profile
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.ticketbookingapp.network.AuthManager
-import com.example.ticketbookingapp.viewmodel.MyTicketsViewModel
+import com.example.ticketbookingapp.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onNavigateBack: () -> Unit,
-    viewModel: MyTicketsViewModel = viewModel()
+    viewModel: ProfileViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    val context = LocalContext.current
-    val authManager = remember { AuthManager(context.applicationContext) }
+    // Show success message
+    LaunchedEffect(state.successMessage) {
+        state.successMessage?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
 
-    val userName = authManager.getUserName() ?: "Unknown"
-    val userEmail = authManager.getUserEmail() ?: "Unknown"
-    val userRole = authManager.getUserRole() ?: "user"
-
-    LaunchedEffect(Unit) {
-        viewModel.onEvent(com.example.ticketbookingapp.appUi.tickets.MyTicketsEvent.Load)
+    // Show error message
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                duration = SnackbarDuration.Long
+            )
+        }
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Profile") },
                 navigationIcon = {
                     IconButton(onClick = { onNavigateBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (!state.isEditMode) {
+                        IconButton(onClick = { viewModel.onEvent(ProfileEvent.ToggleEditMode) }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit")
+                        }
                     }
                 }
             )
         }
     ) { paddingValues ->
+
+        if (state.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+            return@Scaffold
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -51,6 +79,7 @@ fun ProfileScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             // Profile Icon
             Surface(
                 modifier = Modifier.size(100.dp),
@@ -59,7 +88,7 @@ fun ProfileScreen(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
-                        text = userName.firstOrNull()?.uppercase() ?: "U",
+                        text = state.name.firstOrNull()?.uppercase() ?: "U",
                         style = MaterialTheme.typography.displayLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -68,18 +97,76 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = userName.replaceFirstChar{it.titlecase()},
-                style = MaterialTheme.typography.headlineMedium
-            )
+            // Edit Mode: Text Fields
+            if (state.isEditMode) {
+                OutlinedTextField(
+                    value = state.name,
+                    onValueChange = { viewModel.onEvent(ProfileEvent.NameChanged(it)) },
+                    label = { Text("Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.isSaving
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = userEmail,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                OutlinedTextField(
+                    value = state.email,
+                    onValueChange = { viewModel.onEvent(ProfileEvent.EmailChanged(it)) },
+                    label = { Text("Email") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.isSaving
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Save and Cancel buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.onEvent(ProfileEvent.ToggleEditMode)
+                            // Reload to reset values
+                        },
+                        modifier = Modifier.weight(1f),
+                        enabled = !state.isSaving
+                    ) {
+                        Text("Cancel")
+                    }
+
+                    Button(
+                        onClick = { viewModel.onEvent(ProfileEvent.Save) },
+                        modifier = Modifier.weight(1f),
+                        enabled = !state.isSaving
+                    ) {
+                        if (state.isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text("Save")
+                        }
+                    }
+                }
+            }
+            // View Mode: Display Text
+            else {
+                Text(
+                    text = state.name,
+                    style = MaterialTheme.typography.headlineMedium
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = state.email,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -104,9 +191,9 @@ fun ProfileScreen(
                     ) {
                         Text("Role:")
                         Text(
-                            text = userRole.uppercase(),
+                            text = state.role.uppercase(),
                             style = MaterialTheme.typography.labelLarge,
-                            color = if (userRole == "admin")
+                            color = if (state.role == "admin")
                                 MaterialTheme.colorScheme.primary
                             else
                                 MaterialTheme.colorScheme.onSurfaceVariant
@@ -121,20 +208,12 @@ fun ProfileScreen(
                     ) {
                         Text("Total Tickets Booked:")
                         Text(
-                            text = "${state.tickets.size}",
+                            text = "${state.totalTickets}",
                             style = MaterialTheme.typography.labelLarge
                         )
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "To edit your profile information, please contact support.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

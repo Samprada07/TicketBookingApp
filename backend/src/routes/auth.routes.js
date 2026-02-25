@@ -113,4 +113,40 @@ router.get("/me", authenticateToken, async (req, res) => {
     }
 });
 
+// Update user profile (authenticated users)
+router.put("/profile", authenticateToken, async (req, res) => {
+    const { name, email } = req.body;
+
+    try {
+        // Check if email is already taken by another user
+        if (email) {
+            const existingUser = await pool.query(
+                "SELECT * FROM users WHERE email = $1 AND id != $2",
+                [email, req.user.id]
+            );
+            if (existingUser.rows.length > 0) {
+                return res.status(400).json({ error: "Email already in use" });
+            }
+        }
+
+        // Update user
+        const updatedUser = await pool.query(
+            "UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING id, name, email, role",
+            [name || req.user.name, email || req.user.email, req.user.id]
+        );
+
+        if (updatedUser.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json({
+            user: updatedUser.rows[0],
+            message: "Profile updated successfully"
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Server error");
+    }
+});
+
 module.exports = router;
