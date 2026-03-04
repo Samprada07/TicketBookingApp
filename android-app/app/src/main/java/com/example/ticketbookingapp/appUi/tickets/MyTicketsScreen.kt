@@ -217,7 +217,21 @@ fun MyTicketsScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(state.tickets) { ticket ->
+                items(state.tickets.filter { ticket ->
+                    // Hide cancelled tickets older than 3 days
+                    if (ticket.status == "cancelled") {
+                        try {
+                            val cancelledDate = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                                .parse(ticket.bookedAt) ?: return@filter true
+                            val daysSinceCancelled = (Date().time - cancelledDate.time) / (1000.0 * 60 * 60 * 24)
+                            daysSinceCancelled <= 3
+                        } catch (e: Exception) {
+                            true // Show if parse fails
+                        }
+                    } else {
+                        true // Show active/expired tickets
+                    }
+                }) { ticket ->
                     Card(
                         Modifier.fillMaxWidth(),
                         colors = if (ticket.status == "cancelled") {
@@ -279,21 +293,35 @@ fun MyTicketsScreen(
                             if (ticket.status == "active") {
                                 Spacer(Modifier.height(12.dp))
                                 if (canCancelTicket(ticket)) {
-                                    OutlinedButton(
-                                        { ticketToCancel = ticket },
-                                        Modifier.fillMaxWidth(),
-                                        colors = ButtonDefaults.outlinedButtonColors(MaterialTheme.colorScheme.error)
+                                    Button(
+                                        onClick = { ticketToCancel = ticket },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Cancel & Get ₹${String.format(Locale.US, "%.2f", ticket.price)} Refund")                                    }
+                                } else {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                        )
                                     ) {
                                         Text(
-                                            "Cancel & Get ₹${String.format(Locale.US, "%.2f", ticket.price)} Refund"
+                                            text = "⚠️ Cannot cancel (event is less than 2 days away)",
+                                            modifier = Modifier.padding(12.dp),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
-                                } else {
-                                    Text(
-                                        "Cannot cancel (event is less than 2 days away)",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
                                 }
                             }
                         }
