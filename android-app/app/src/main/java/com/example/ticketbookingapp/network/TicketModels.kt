@@ -23,11 +23,14 @@ data class TicketResponse(
 // Response from GET /api/tickets/my  →  { tickets: [...] }
 data class MyTicket(
     val id: Int,
+    @SerializedName("event_id") val eventId: Int,
     @SerializedName("seat_number") val seatNumber: Int?,
     @SerializedName("booked_at") val bookedAt: String,
     @SerializedName("event_name") val eventName: String,
     val venue: String,
-    @SerializedName("start_time") val startTime: String
+    @SerializedName("start_time") val startTime: String,
+    val status: String = "active",
+    val price: Double = 0.0
 )
 
 data class MyTicketsResponse(

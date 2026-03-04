@@ -10,7 +10,8 @@ data class CreateEventRequest(
     @SerializedName("start_time") val startTime: String,
     @SerializedName("end_time") val endTime: String,
     @SerializedName("total_seats") val totalSeats: Int,
-    @SerializedName("image_url") val imageUrl: String? = null
+    @SerializedName("image_url") val imageUrl: String? = null,
+    val price: Double
 )
 
 // Response from GET /api/events/:id/bookings (admin only)

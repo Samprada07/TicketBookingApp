@@ -29,8 +29,8 @@ router.post("/book", authenticateToken, async (req, res) => {
 
         // Insert ticket
         const newTicket = await pool.query(
-            "INSERT INTO tickets (user_id, event_id, seat_number) VALUES ($1, $2, $3) RETURNING *",
-            [user_id, event_id, seat_number || null]
+            "INSERT INTO tickets (user_id, event_id, seat_number, status, price) VALUES ($1, $2, $3, 'active', (SELECT price FROM events WHERE id = $2)) RETURNING *",
+            [req.user.id, event_id, seat_number || null]
         );
 
         // Update available seats
@@ -51,7 +51,8 @@ router.post("/book", authenticateToken, async (req, res) => {
 router.get("/my", authenticateToken, async (req, res) => {
     try {
         const tickets = await pool.query(
-            `SELECT t.id, t.seat_number, t.booked_at, e.name as event_name, e.venue, e.start_time
+            `SELECT t.id, t.seat_number, t.booked_at, t.status, t.price,
+                    e.name as event_name, e.venue, e.start_time
              FROM tickets t
              JOIN events e ON t.event_id = e.id
              WHERE t.user_id = $1
@@ -62,6 +63,50 @@ router.get("/my", authenticateToken, async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send("Server error");
+    }
+});
+
+router.delete("/:id", authenticateToken, async (req, res) => {
+    try {
+        const ticket = await pool.query(
+            `SELECT t.*, e.start_time, e.price
+             FROM tickets t
+             JOIN events e ON t.event_id = e.id
+             WHERE t.id = $1 AND t.user_id = $2`,
+            [req.params.id, req.user.id]
+        );
+
+        if (ticket.rows.length === 0) {
+            return res.status(404).json({ error: "Ticket not found" });
+        }
+
+        const ticketData = ticket.rows[0];
+
+        if (ticketData.status === 'cancelled') {
+            return res.status(400).json({ error: "Ticket already cancelled" });
+        }
+
+        // Only check event time (removed booking time check)
+        const eventStart = new Date(ticketData.start_time);
+        const now = new Date();
+        const daysUntilEvent = (eventStart - now) / (1000 * 60 * 60 * 24);
+
+        if (daysUntilEvent < 2) {
+            return res.status(400).json({
+                error: "Cannot cancel. Event is less than 2 days away."
+            });
+        }
+
+        await pool.query("UPDATE tickets SET status = 'cancelled' WHERE id = $1", [req.params.id]);
+        await pool.query("UPDATE events SET available_seats = available_seats + 1 WHERE id = $1", [ticketData.event_id]);
+
+        res.json({
+            message: `Refund of ₹${ticketData.price} will be processed in 5-7 days.`,
+            ticket_id: req.params.id
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: err.message });
     }
 });
 

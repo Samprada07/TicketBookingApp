@@ -25,7 +25,32 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import androidx.core.graphics.set
 import androidx.core.graphics.createBitmap
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
+private fun canCancelTicket(ticket: MyTicket): Boolean {
+    return try {
+        // Handle both formats: with T and Z
+        val dateFormat = if (ticket.startTime.contains("T")) {
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+        } else {
+            SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        }
+
+        val eventStart = dateFormat.parse(ticket.startTime) ?: return false
+        val now = Date()
+        val daysUntilEvent = (eventStart.time - now.time) / (1000.0 * 60 * 60 * 24)
+
+        daysUntilEvent >= 2
+    } catch (e: Exception) {
+        android.util.Log.e("CancelTicket", "Date parse error: ${e.message}")
+        false
+    }
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyTicketsScreen(
@@ -34,10 +59,45 @@ fun MyTicketsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var selectedTicket by remember { mutableStateOf<MyTicket?>(null) }
+    var ticketToCancel by remember { mutableStateOf<MyTicket?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Load data when screen appears
     LaunchedEffect(Unit) {
         viewModel.onEvent(MyTicketsEvent.Load)
+    }
+
+    LaunchedEffect(state.successMessage) {
+        state.successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
+
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
+
+    ticketToCancel?.let { ticket ->
+        AlertDialog(
+            onDismissRequest = { ticketToCancel = null },
+            title = { Text("Cancel Ticket") },
+            text = { Text("Cancel this ticket? Refund of ₹${String.format(Locale.US, "%.2f", ticket.price)} in 5-7 days.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.onEvent(MyTicketsEvent.CancelTicket(ticket.id))
+                    ticketToCancel = null
+                }) {
+                    Text("Yes, Cancel", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { ticketToCancel = null }) {
+                    Text("Keep Ticket")
+                }
+            }
+        )
     }
 
     // Full-screen QR code dialog
@@ -95,6 +155,7 @@ fun MyTicketsScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("My Tickets") },
@@ -158,56 +219,82 @@ fun MyTicketsScreen(
             ) {
                 items(state.tickets) { ticket ->
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { }
+                        Modifier.fillMaxWidth(),
+                        colors = if (ticket.status == "cancelled") {
+                            CardDefaults.cardColors(MaterialTheme.colorScheme.errorContainer)
+                        } else CardDefaults.cardColors()
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            // Ticket info
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = ticket.eventName,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "📍 ${ticket.venue}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "🕐 ${ticket.startTime}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = if (ticket.seatNumber != null) "🪑 Seat: ${ticket.seatNumber}" else "🪑 Seat: Any",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Booked at: ${ticket.bookedAt}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                        Column(Modifier.padding(16.dp)) {
+                            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        ticket.eventName,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        "📍 ${ticket.venue}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        "🕐 ${ticket.startTime}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        if (ticket.seatNumber != null) "🪑 Seat: ${ticket.seatNumber}" else "🪑 Any",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        "💰 Rs.${String.format(Locale.US, "%.2f", ticket.price)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+
+                                    if (ticket.status == "cancelled") {
+                                        Spacer(Modifier.height(8.dp))
+                                        Text(
+                                            "❌ CANCELLED",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+
+                                if (ticket.status == "active") {
+                                    Spacer(Modifier.width(16.dp))
+                                    generateQRCode("TICKET-${ticket.id}", 150)?.let {
+                                        Image(
+                                            it.asImageBitmap(),
+                                            "QR",
+                                            Modifier.size(80.dp)
+                                                .clickable { selectedTicket = ticket }
+                                        )
+                                    }
+                                }
                             }
 
-                            Spacer(modifier = Modifier.width(16.dp))
-
-                            // QR Code thumbnail
-                            val qrBitmap = generateQRCode("TICKET-${ticket.id}", 150)
-                            qrBitmap?.let {
-                                Image(
-                                    bitmap = it.asImageBitmap(),
-                                    contentDescription = "QR Code",
-                                    modifier = Modifier.size(80.dp)
-                                )
+                            if (ticket.status == "active") {
+                                Spacer(Modifier.height(12.dp))
+                                if (canCancelTicket(ticket)) {
+                                    OutlinedButton(
+                                        { ticketToCancel = ticket },
+                                        Modifier.fillMaxWidth(),
+                                        colors = ButtonDefaults.outlinedButtonColors(MaterialTheme.colorScheme.error)
+                                    ) {
+                                        Text(
+                                            "Cancel & Get ₹${String.format(Locale.US, "%.2f", ticket.price)} Refund"
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        "Cannot cancel (event is less than 2 days away)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
@@ -218,7 +305,7 @@ fun MyTicketsScreen(
 }
 
 // Generate QR Code bitmap
-private fun generateQRCode(text: String, size: Int): Bitmap? {
+fun generateQRCode(text: String, size: Int): Bitmap? {
     return try {
         val writer = QRCodeWriter()
         val bitMatrix = writer.encode(text, BarcodeFormat.QR_CODE, size, size)

@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.ticketbookingapp.network.AuthManager
 import com.example.ticketbookingapp.viewmodel.EventListViewModel
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -291,6 +292,12 @@ fun EventListScreen(
                                             MaterialTheme.colorScheme.onSurfaceVariant
                                         else
                                             MaterialTheme.colorScheme.error
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "💰 Rs.${String.format(Locale.US, "%.2f", event.price)}",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }

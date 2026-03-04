@@ -147,6 +147,16 @@ fun CreateEventScreen(
                 enabled = !state.isLoading && !state.isUploading
             )
 
+            OutlinedTextField(
+                value = state.price,
+                onValueChange = { viewModel.onEvent(CreateEventEvent.PriceChanged(it)) },
+                label = { Text("Price (Rs.) *") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                enabled = !state.isLoading && !state.isUploading,
+                prefix = { Text("Rs.") }
+            )
+
             Text(
                 "Event Image (optional)",
                 style = MaterialTheme.typography.labelLarge

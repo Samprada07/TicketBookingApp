@@ -42,6 +42,7 @@ class CreateEventViewModel(application: Application) : AndroidViewModel(applicat
             is CreateEventEvent.ImageSelected -> uploadImage(event.uri)
             CreateEventEvent.Submit -> createEvent()
             is CreateEventEvent.Update -> updateEvent(event.eventId)
+            is CreateEventEvent.PriceChanged -> _state.value = _state.value.copy(price = event.value)
         }
     }
 
@@ -59,7 +60,8 @@ class CreateEventViewModel(application: Application) : AndroidViewModel(applicat
                             startTime = event.startTime,
                             endTime = event.endTime,
                             totalSeats = event.totalSeats.toString(),
-                            imageUrl = event.imageUrl ?: ""
+                            imageUrl = event.imageUrl ?: "",
+                            price = event.price.toString()
                         )
                     }
                 } else {
@@ -134,6 +136,7 @@ class CreateEventViewModel(application: Application) : AndroidViewModel(applicat
 
     private fun createEvent() {
         val state = _state.value
+        val price = state.price.toDoubleOrNull()
 
         // Validation
         if (state.name.isBlank()) { _state.value = _state.value.copy(error = "Event name is required"); return }
@@ -141,6 +144,10 @@ class CreateEventViewModel(application: Application) : AndroidViewModel(applicat
         if (state.venue.isBlank()) { _state.value = _state.value.copy(error = "Venue is required"); return }
         if (state.startTime.isBlank()) { _state.value = _state.value.copy(error = "Start time is required"); return }
         if (state.endTime.isBlank()) { _state.value = _state.value.copy(error = "End time is required"); return }
+        if (price == null || price <= 0) {
+            _state.value = _state.value.copy(error = "Price must be a valid positive number")
+            return
+        }
 
         val totalSeats = state.totalSeats.toIntOrNull()
         if (totalSeats == null || totalSeats <= 0) {
@@ -167,7 +174,8 @@ class CreateEventViewModel(application: Application) : AndroidViewModel(applicat
                         startTime = state.startTime.trim(),
                         endTime = state.endTime.trim(),
                         totalSeats = totalSeats,
-                        imageUrl = state.imageUrl.ifBlank { null }
+                        imageUrl = state.imageUrl.ifBlank { null },
+                        price = price
                     )
                 )
 
@@ -198,6 +206,7 @@ class CreateEventViewModel(application: Application) : AndroidViewModel(applicat
 
     private fun updateEvent(eventId: Int) {
         val state = _state.value
+        val price = state.price.toDoubleOrNull()
 
         // Validation
         if (state.name.isBlank()) { _state.value = _state.value.copy(error = "Event name is required"); return }
@@ -205,6 +214,10 @@ class CreateEventViewModel(application: Application) : AndroidViewModel(applicat
         if (state.venue.isBlank()) { _state.value = _state.value.copy(error = "Venue is required"); return }
         if (state.startTime.isBlank()) { _state.value = _state.value.copy(error = "Start time is required"); return }
         if (state.endTime.isBlank()) { _state.value = _state.value.copy(error = "End time is required"); return }
+        if (price == null || price <= 0) {
+            _state.value = _state.value.copy(error = "Price must be a valid positive number")
+            return
+        }
 
         val totalSeats = state.totalSeats.toIntOrNull()
         if (totalSeats == null || totalSeats <= 0) {
@@ -232,7 +245,8 @@ class CreateEventViewModel(application: Application) : AndroidViewModel(applicat
                         startTime = state.startTime.trim(),
                         endTime = state.endTime.trim(),
                         totalSeats = totalSeats,
-                        imageUrl = state.imageUrl.ifBlank { null }
+                        imageUrl = state.imageUrl.ifBlank { null },
+                        price = price
                     )
                 )
 

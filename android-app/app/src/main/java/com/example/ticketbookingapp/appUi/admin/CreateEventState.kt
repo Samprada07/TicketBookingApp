@@ -7,9 +7,10 @@ data class CreateEventState(
     val startTime: String = "",
     val endTime: String = "",
     val totalSeats: String = "",
-    val imageUrl: String = "",  // Stores uploaded image URL
+    val price: String = "",
+    val imageUrl: String = "",
     val isLoading: Boolean = false,
-    val isUploading: Boolean = false,  // separate flag for image upload
+    val isUploading: Boolean = false,
     val error: String? = null,
     val successMessage: String? = null,
     val isSuccess: Boolean = false

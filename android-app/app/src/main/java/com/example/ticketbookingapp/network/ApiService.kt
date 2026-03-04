@@ -4,6 +4,7 @@ import com.example.ticketbookingapp.viewmodel.UpdateProfileRequest
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
+import com.google.gson.annotations.SerializedName
 
 data class LoginRequest(
     val email: String,
@@ -22,6 +23,11 @@ data class UpdateProfileRequest(
 data class UpdateProfileResponse(
     val user: User,
     val message: String
+)
+
+data class CancelTicketResponse(
+    val message: String,
+    @SerializedName("ticket_id") val ticketId: Int
 )
 
 interface ApiService {
@@ -92,4 +98,11 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Body request: UpdateProfileRequest
     ): Response<UpdateProfileResponse>
+
+    // ── Cancel Ticket ─────────────────────────────────────────────────
+    @DELETE("api/tickets/{id}")
+    suspend fun cancelTicket(
+        @Header("Authorization") token: String,
+        @Path("id") id: Int
+    ): Response<CancelTicketResponse>
 }

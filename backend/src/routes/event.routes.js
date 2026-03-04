@@ -45,7 +45,7 @@ router.post("/", isAdmin, async (req, res) => {
 
 // Update event (ADMIN ONLY)
 router.put("/:id", isAdmin, async (req, res) => {
-    const { name, description, venue, start_time, end_time, total_seats, image_url } = req.body;
+    const { name, description, venue, start_time, end_time, total_seats, image_url, price } = req.body;
     try {
         // Get current event to calculate booked seats
         const currentEvent = await pool.query(
@@ -59,11 +59,8 @@ router.put("/:id", isAdmin, async (req, res) => {
 
         const current = currentEvent.rows[0];
         const bookedSeats = current.total_seats - current.available_seats;
-
-        // Calculate new available_seats
         const newAvailableSeats = total_seats - bookedSeats;
 
-        // Don't allow reducing total_seats below booked seats
         if (newAvailableSeats < 0) {
             return res.status(400).json({
                 error: `Cannot reduce total seats to ${total_seats}. ${bookedSeats} seats are already booked.`
@@ -73,10 +70,10 @@ router.put("/:id", isAdmin, async (req, res) => {
         const updatedEvent = await pool.query(
             `UPDATE events
              SET name = $1, description = $2, venue = $3, start_time = $4,
-                 end_time = $5, total_seats = $6, available_seats = $7, image_url = $8
-             WHERE id = $9
+                 end_time = $5, total_seats = $6, available_seats = $7, image_url = $8, price = $9
+             WHERE id = $10
              RETURNING *`,
-            [name, description, venue, start_time, end_time, total_seats, newAvailableSeats, image_url || null, req.params.id]
+            [name, description, venue, start_time, end_time, total_seats, newAvailableSeats, image_url || null, price, req.params.id]
         );
 
         res.json({ event: updatedEvent.rows[0] });
