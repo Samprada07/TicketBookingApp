@@ -18,6 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.ticketbookingapp.network.AuthManager
 import com.example.ticketbookingapp.viewmodel.EventDetailViewModel
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -142,7 +143,7 @@ fun EventDetailScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "💰 Price: ₹${String.format("%.2f", event.price)} per ticket",
+                    text = "💰 Rs.${String.format(Locale.US, "%.2f", event.price)}",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )

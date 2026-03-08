@@ -23,16 +23,13 @@ import com.example.ticketbookingapp.network.MyTicket
 import com.example.ticketbookingapp.viewmodel.MyTicketsViewModel
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
-import androidx.core.graphics.set
-import androidx.core.graphics.createBitmap
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
+import java.util.*
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.set
 
 private fun canCancelTicket(ticket: MyTicket): Boolean {
     return try {
-        // Handle both formats: with T and Z
         val dateFormat = if (ticket.startTime.contains("T")) {
             SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).apply {
                 timeZone = TimeZone.getTimeZone("UTC")
@@ -51,6 +48,7 @@ private fun canCancelTicket(ticket: MyTicket): Boolean {
         false
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyTicketsScreen(
@@ -62,7 +60,6 @@ fun MyTicketsScreen(
     var ticketToCancel by remember { mutableStateOf<MyTicket?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Load data when screen appears
     LaunchedEffect(Unit) {
         viewModel.onEvent(MyTicketsEvent.Load)
     }
@@ -100,55 +97,28 @@ fun MyTicketsScreen(
         )
     }
 
-    // Full-screen QR code dialog
     selectedTicket?.let { ticket ->
-        Dialog(onDismissRequest = { }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
+        Dialog(onDismissRequest = { selectedTicket = null }) {
+            Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "Ticket QR Code",
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        IconButton(onClick = { }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        Text("Ticket QR Code", style = MaterialTheme.typography.titleLarge)
+                        IconButton(onClick = { selectedTicket = null }) {
+                            Icon(Icons.Default.Close, "Close")
                         }
                     }
-
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    // Large QR Code
-                    val qrBitmap = generateQRCode("TICKET-${ticket.id}", 400)
-                    qrBitmap?.let {
-                        Image(
-                            bitmap = it.asImageBitmap(),
-                            contentDescription = "QR Code",
-                            modifier = Modifier.size(300.dp)
-                        )
-                    }
-
+                    val qr = generateQRCode("TICKET-${ticket.id}", 400)
+                    qr?.let { Image(it.asImageBitmap(), "QR", Modifier.size(300.dp)) }
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = ticket.eventName,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = "Ticket ID: ${ticket.id}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(ticket.eventName, style = MaterialTheme.typography.titleMedium)
+                    Text("ID: ${ticket.id}", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -160,76 +130,80 @@ fun MyTicketsScreen(
             TopAppBar(
                 title = { Text("My Tickets") },
                 navigationIcon = {
-                    IconButton(onClick = { onNavigateBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 }
             )
         }
-    ) { paddingValues ->
+    ) { pad ->
 
-        // ── Error + Retry ─────────────────────────────────────────
         if (state.error != null && state.tickets.isEmpty()) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = state.error!!,
-                    color = MaterialTheme.colorScheme.error
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                IconButton(onClick = { viewModel.onEvent(MyTicketsEvent.Retry) }) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Retry")
+                Text(state.error!!, color = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.height(16.dp))
+                IconButton({ viewModel.onEvent(MyTicketsEvent.Retry) }) {
+                    Icon(Icons.Default.Refresh, "Retry")
                 }
             }
             return@Scaffold
         }
 
-        // ── Empty State ───────────────────────────────────────────
         if (state.tickets.isEmpty() && !state.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No tickets booked yet 🎟️",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                Text("No tickets yet 🎟️", style = MaterialTheme.typography.bodyLarge)
             }
             return@Scaffold
         }
 
-        // ── Pull-to-Refresh + Tickets List ────────────────────────
         PullToRefreshBox(
-            isRefreshing = state.isLoading,
-            onRefresh = { viewModel.onEvent(MyTicketsEvent.Retry) },
-            modifier = Modifier.fillMaxSize()
+            state.isLoading,
+            { viewModel.onEvent(MyTicketsEvent.Retry) },
+            Modifier.fillMaxSize()
         ) {
             LazyColumn(
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    top = paddingValues.calculateTopPadding() + 16.dp,
-                    bottom = paddingValues.calculateBottomPadding() + 16.dp,
+                    top = pad.calculateTopPadding() + 16.dp,
                     start = 16.dp,
-                    end = 16.dp
+                    end = 16.dp,
+                    bottom = pad.calculateBottomPadding() + 16.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(state.tickets.filter { ticket ->
-                    // Hide cancelled tickets older than 3 days
-                    if (ticket.status == "cancelled") {
-                        try {
-                            val cancelledDate = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-                                .parse(ticket.bookedAt) ?: return@filter true
-                            val daysSinceCancelled = (Date().time - cancelledDate.time) / (1000.0 * 60 * 60 * 24)
-                            daysSinceCancelled <= 3
-                        } catch (e: Exception) {
-                            true // Show if parse fails
+                    // Hide cancelled tickets older than 7 days
+                    when (ticket.status) {
+                        "cancelled" -> {
+                            try {
+                                val bookedDate = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                                    .parse(ticket.bookedAt) ?: return@filter true
+                                val daysSinceCancelled = (Date().time - bookedDate.time) / (1000.0 * 60 * 60 * 24)
+                                daysSinceCancelled <= 7
+                            } catch (_: Exception) {
+                                true
+                            }
                         }
-                    } else {
-                        true // Show active/expired tickets
+                        "expired" -> {
+                            // Hide expired tickets older than 7 days
+                            try {
+                                val eventStart =
+                                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).apply {
+                                        timeZone = TimeZone.getTimeZone("UTC")
+                                    }.parse(ticket.startTime) ?: return@filter true
+                                val daysSinceEvent = (Date().time - eventStart.time) / (1000.0 * 60 * 60 * 24)
+                                daysSinceEvent <= 7
+                            } catch (_: Exception) {
+                                true
+                            }
+                        }
+                        else -> {
+                            true // Show active tickets
+                        }
                     }
                 }) { ticket ->
                     Card(
@@ -241,20 +215,11 @@ fun MyTicketsScreen(
                         Column(Modifier.padding(16.dp)) {
                             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                                 Column(Modifier.weight(1f)) {
-                                    Text(
-                                        ticket.eventName,
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
+                                    Text(ticket.eventName, style = MaterialTheme.typography.titleMedium)
                                     Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        "📍 ${ticket.venue}",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
+                                    Text("📍 ${ticket.venue}", style = MaterialTheme.typography.bodySmall)
                                     Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        "🕐 ${ticket.startTime}",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
+                                    Text("🕐 ${ticket.startTime}", style = MaterialTheme.typography.bodySmall)
                                     Spacer(Modifier.height(4.dp))
                                     Text(
                                         if (ticket.seatNumber != null) "🪑 Seat: ${ticket.seatNumber}" else "🪑 Any",
@@ -269,11 +234,12 @@ fun MyTicketsScreen(
 
                                     if (ticket.status == "cancelled") {
                                         Spacer(Modifier.height(8.dp))
-                                        Text(
-                                            "❌ CANCELLED",
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = MaterialTheme.colorScheme.error
-                                        )
+                                        Text("❌ CANCELLED", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error)
+                                    }
+
+                                    if (ticket.status == "expired") {
+                                        Spacer(Modifier.height(8.dp))
+                                        Text("⏰ EXPIRED", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
 
@@ -283,8 +249,7 @@ fun MyTicketsScreen(
                                         Image(
                                             it.asImageBitmap(),
                                             "QR",
-                                            Modifier.size(80.dp)
-                                                .clickable { selectedTicket = ticket }
+                                            Modifier.size(80.dp).clickable { selectedTicket = ticket }
                                         )
                                     }
                                 }
@@ -307,7 +272,8 @@ fun MyTicketsScreen(
                                             modifier = Modifier.size(18.dp)
                                         )
                                         Spacer(Modifier.width(8.dp))
-                                        Text("Cancel & Get ₹${String.format(Locale.US, "%.2f", ticket.price)} Refund")                                    }
+                                        Text("Cancel & Get Rs.${String.format(Locale.US, "%.2f", ticket.price)} Refund")
+                                    }
                                 } else {
                                     Card(
                                         modifier = Modifier.fillMaxWidth(),
@@ -332,22 +298,18 @@ fun MyTicketsScreen(
     }
 }
 
-// Generate QR Code bitmap
-fun generateQRCode(text: String, size: Int): Bitmap? {
+private fun generateQRCode(text: String, size: Int): Bitmap? {
     return try {
         val writer = QRCodeWriter()
-        val bitMatrix = writer.encode(text, BarcodeFormat.QR_CODE, size, size)
-        val width = bitMatrix.width
-        val height = bitMatrix.height
-        val bitmap = createBitmap(width, height, Bitmap.Config.RGB_565)
-
-        for (x in 0 until width) {
-            for (y in 0 until height) {
-                bitmap[x, y] =
-                    if (bitMatrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+        val matrix = writer.encode(text, BarcodeFormat.QR_CODE, size, size)
+        val bmp = createBitmap(size, size, Bitmap.Config.RGB_565)
+        for (x in 0 until size) {
+            for (y in 0 until size) {
+                bmp[x, y] =
+                    if (matrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
             }
         }
-        bitmap
+        bmp
     } catch (_: Exception) {
         null
     }

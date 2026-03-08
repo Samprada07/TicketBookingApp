@@ -7,7 +7,9 @@ const isAdmin = require("../middleware/admin.middleware");
 // Get all events (public)
 router.get("/", async (req, res) => {
     try {
-        const events = await pool.query("SELECT * FROM events ORDER BY start_time ASC");
+        const events = await pool.query(
+            "SELECT * FROM events WHERE start_time > NOW() ORDER BY start_time ASC"
+        );
         res.json({ events: events.rows });
     } catch (err) {
         console.error(err.message);
