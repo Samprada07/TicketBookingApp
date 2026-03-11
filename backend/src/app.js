@@ -10,6 +10,7 @@ const app = express();
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use('/api/payment/webhook', express.raw({ type: 'application/json' }));
 
 // Test route
 app.get("/health", (req, res) => {
@@ -32,6 +33,9 @@ app.use("/api/tickets", ticketRoutes);
 
 const uploadRoutes = require("./routes/upload.routes");
 app.use("/api/upload", uploadRoutes);
+
+const paymentRoutes = require("./routes/payment.routes");
+app.use("/api/payment", paymentRoutes);
 
 module.exports = app;
 
