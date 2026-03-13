@@ -30,6 +30,39 @@ data class CancelTicketResponse(
     @SerializedName("ticket_id") val ticketId: Int
 )
 
+// Payment models
+data class CreatePaymentIntentRequest(
+    @SerializedName("event_id") val eventId: Int,
+    @SerializedName("seat_number") val seatNumber: Int? = null
+)
+
+data class PaymentIntentResponse(
+    @SerializedName("clientSecret") val clientSecret: String,
+    @SerializedName("ticketId") val ticketId: Int,
+    val amount: Double
+)
+
+data class ConfirmPaymentRequest(
+    @SerializedName("payment_intent_id") val paymentIntentId: String
+)
+
+data class ConfirmPaymentResponse(
+    val success: Boolean,
+    val ticket: MyTicket?,
+    val message: String
+)
+
+data class RefundRequest(
+    @SerializedName("ticket_id") val ticketId: Int
+)
+
+data class RefundResponse(
+    val success: Boolean,
+    @SerializedName("refund_id") val refundId: String,
+    val amount: Double,
+    val message: String
+)
+
 interface ApiService {
 
     // ── Auth ────────────────────────────────────────────────────
@@ -105,4 +138,23 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: Int
     ): Response<CancelTicketResponse>
+
+    // ── Payment  ─────────────────────────────────────────────────
+    @POST("api/payment/create-intent")
+    suspend fun createPaymentIntent(
+        @Header("Authorization") token: String,
+        @Body request: CreatePaymentIntentRequest
+    ): Response<PaymentIntentResponse>
+
+    @POST("api/payment/confirm")
+    suspend fun confirmPayment(
+        @Header("Authorization") token: String,
+        @Body request: ConfirmPaymentRequest
+    ): Response<ConfirmPaymentResponse>
+
+    @POST("api/payment/refund")
+    suspend fun processRefund(
+        @Header("Authorization") token: String,
+        @Body request: RefundRequest
+    ): Response<RefundResponse>
 }

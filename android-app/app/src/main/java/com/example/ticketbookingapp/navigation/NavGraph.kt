@@ -13,10 +13,14 @@ import com.example.ticketbookingapp.appUi.admin.EventBookingsScreen
 import com.example.ticketbookingapp.appUi.events.EventDetailScreen
 import com.example.ticketbookingapp.appUi.events.EventListScreen
 import com.example.ticketbookingapp.appUi.login.LoginScreen
+import com.example.ticketbookingapp.appUi.payment.PaymentScreen
 import com.example.ticketbookingapp.appUi.profile.ProfileScreen
 import com.example.ticketbookingapp.appUi.register.RegisterScreen
 import com.example.ticketbookingapp.appUi.splash.SplashScreen
 import com.example.ticketbookingapp.appUi.tickets.MyTicketsScreen
+import com.example.ticketbookingapp.navigation.Routes.EVENT_LIST
+import com.example.ticketbookingapp.navigation.Routes.MY_TICKETS
+import com.example.ticketbookingapp.navigation.Routes.PAYMENT
 import com.example.ticketbookingapp.network.AuthManager
 
 object Routes {
@@ -30,6 +34,7 @@ object Routes {
     const val CREATE_EVENT = "create_event?eventId={eventId}"
     const val EVENT_BOOKINGS = "event_bookings/{eventId}/{eventName}"
     const val PROFILE = "profile"
+    const val PAYMENT = "payment/{eventId}/{eventName}/{eventPrice}/{seatNumber}"
 }
 
 @Composable
@@ -118,7 +123,8 @@ fun NavGraph() {
             val eventId = backStackEntry.arguments?.getInt("eventId") ?: return@composable
             EventDetailScreen(
                 eventId = eventId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                navController = navController
             )
         }
 
@@ -183,6 +189,37 @@ fun NavGraph() {
         composable(Routes.PROFILE) {
             ProfileScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        // ── Payment ────────────────────────────────────────
+        composable(
+            route = PAYMENT,
+            arguments = listOf(
+                navArgument("eventId") { type = NavType.IntType },
+                navArgument("eventName") { type = NavType.StringType },
+                navArgument("eventPrice") { type = NavType.FloatType },
+                navArgument("seatNumber") {
+                    type = NavType.IntType
+                    defaultValue = -1
+                }
+            )
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getInt("eventId") ?: 0
+            val eventName = backStackEntry.arguments?.getString("eventName") ?: ""
+            val eventPrice = backStackEntry.arguments?.getFloat("eventPrice")?.toDouble() ?: 0.0
+            val seatNumber = backStackEntry.arguments?.getInt("seatNumber")?.takeIf { it != -1 }
+
+            PaymentScreen(
+                eventId = eventId,
+                eventName = eventName,
+                eventPrice = eventPrice,
+                seatNumber = seatNumber,
+                onNavigateBack = { navController.navigateUp() },
+                onPaymentSuccess = {
+                    navController.navigate(MY_TICKETS) {
+                        popUpTo(EVENT_LIST) { inclusive = false }
+                    }
+                }
             )
         }
     }

@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.ticketbookingapp.network.AuthManager
 import com.example.ticketbookingapp.viewmodel.EventDetailViewModel
@@ -25,6 +26,7 @@ import java.util.Locale
 fun EventDetailScreen(
     eventId: Int,
     onNavigateBack: () -> Unit,
+    navController: NavController,
     viewModel: EventDetailViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -184,18 +186,15 @@ fun EventDetailScreen(
 
                     Button(
                         onClick = {
-                            viewModel.onEvent(EventDetailEvent.BookTicket(eventId))
+                            navController.navigate(
+                                "payment/${event.id}/${event.name}/${event.price}/-1"
+                            )
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !state.isBooking && event.availableSeats > 0
+                        enabled = event.availableSeats > 0
                     ) {
-                        if (state.isBooking) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else if (event.availableSeats > 0) {
-                            Text("Book Ticket")
+                        if (event.availableSeats > 0) {
+                            Text("Proceed to Payment - ₹${String.format(Locale.US, "%.2f", event.price)}")
                         } else {
                             Text("No Seats Available")
                         }
