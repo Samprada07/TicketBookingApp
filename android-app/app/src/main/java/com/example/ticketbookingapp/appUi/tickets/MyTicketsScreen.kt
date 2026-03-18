@@ -99,7 +99,9 @@ fun MyTicketsScreen(
 
     selectedTicket?.let { ticket ->
         Dialog(onDismissRequest = { selectedTicket = null }) {
-            Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Card(modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -177,33 +179,29 @@ fun MyTicketsScreen(
             ) {
                 items(state.tickets.filter { ticket ->
                     // Hide cancelled tickets older than 7 days
-                    when (ticket.status) {
-                        "cancelled" -> {
-                            try {
-                                val bookedDate = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-                                    .parse(ticket.bookedAt) ?: return@filter true
-                                val daysSinceCancelled = (Date().time - bookedDate.time) / (1000.0 * 60 * 60 * 24)
-                                daysSinceCancelled <= 7
-                            } catch (_: Exception) {
-                                true
+                    @Suppress("CascadeIf")
+                    if (ticket.status == "cancelled") {
+                        try {
+                            val bookedDate = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                                .parse(ticket.bookedAt) ?: return@filter true
+                            val daysSinceCancelled = (Date().time - bookedDate.time) / (1000.0 * 60 * 60 * 24)
+                            daysSinceCancelled <= 7
+                        } catch (_: Exception) {
+                            true
+                        }
+                    } else if (ticket.status == "expired") {
+                        try {
+                            val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).apply {
+                                timeZone = TimeZone.getTimeZone("UTC")
                             }
+                            val eventStart = dateFormat.parse(ticket.startTime) ?: return@filter true
+                            val daysSinceEvent = (Date().time - eventStart.time) / (1000.0 * 60 * 60 * 24)
+                            daysSinceEvent <= 7
+                        } catch (_: Exception) {
+                            true
                         }
-                        "expired" -> {
-                            // Hide expired tickets older than 7 days
-                            try {
-                                val eventStart =
-                                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).apply {
-                                        timeZone = TimeZone.getTimeZone("UTC")
-                                    }.parse(ticket.startTime) ?: return@filter true
-                                val daysSinceEvent = (Date().time - eventStart.time) / (1000.0 * 60 * 60 * 24)
-                                daysSinceEvent <= 7
-                            } catch (_: Exception) {
-                                true
-                            }
-                        }
-                        else -> {
-                            true // Show active tickets
-                        }
+                    } else {
+                        true // Show active tickets
                     }
                 }) { ticket ->
                     Card(
@@ -249,7 +247,9 @@ fun MyTicketsScreen(
                                         Image(
                                             it.asImageBitmap(),
                                             "QR",
-                                            Modifier.size(80.dp).clickable { selectedTicket = ticket }
+                                            Modifier
+                                                .size(80.dp)
+                                                .clickable { selectedTicket = ticket }
                                         )
                                     }
                                 }
