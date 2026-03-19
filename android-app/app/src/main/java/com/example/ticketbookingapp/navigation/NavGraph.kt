@@ -13,6 +13,7 @@ import com.example.ticketbookingapp.appUi.admin.EventBookingsScreen
 import com.example.ticketbookingapp.appUi.events.EventDetailScreen
 import com.example.ticketbookingapp.appUi.events.EventListScreen
 import com.example.ticketbookingapp.appUi.login.LoginScreen
+import com.example.ticketbookingapp.appUi.payment.PaymentHistoryScreen
 import com.example.ticketbookingapp.appUi.payment.PaymentScreen
 import com.example.ticketbookingapp.appUi.profile.ProfileScreen
 import com.example.ticketbookingapp.appUi.register.RegisterScreen
@@ -21,6 +22,7 @@ import com.example.ticketbookingapp.appUi.tickets.MyTicketsScreen
 import com.example.ticketbookingapp.navigation.Routes.EVENT_LIST
 import com.example.ticketbookingapp.navigation.Routes.MY_TICKETS
 import com.example.ticketbookingapp.navigation.Routes.PAYMENT
+import com.example.ticketbookingapp.navigation.Routes.PAYMENT_HISTORY
 import com.example.ticketbookingapp.network.AuthManager
 
 object Routes {
@@ -35,6 +37,7 @@ object Routes {
     const val EVENT_BOOKINGS = "event_bookings/{eventId}/{eventName}"
     const val PROFILE = "profile"
     const val PAYMENT = "payment/{eventId}/{eventName}/{eventPrice}/{seatNumber}"
+    const val PAYMENT_HISTORY = "payment_history"
 }
 
 @Composable
@@ -188,9 +191,11 @@ fun NavGraph() {
         // ── User Profile ────────────────────────────────────────
         composable(Routes.PROFILE) {
             ProfileScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.navigateUp() },
+                navController = navController
             )
         }
+
         // ── Payment ────────────────────────────────────────
         composable(
             route = PAYMENT,
@@ -220,6 +225,13 @@ fun NavGraph() {
                         popUpTo(EVENT_LIST) { inclusive = false }
                     }
                 }
+            )
+        }
+
+        // ── Payment History ────────────────────────────────────────
+        composable(PAYMENT_HISTORY) {
+            PaymentHistoryScreen(
+                onNavigateBack = { navController.navigateUp() }
             )
         }
     }

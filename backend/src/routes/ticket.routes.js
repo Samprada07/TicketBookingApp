@@ -51,8 +51,7 @@ router.post("/book", authenticateToken, async (req, res) => {
 router.get("/my", authenticateToken, async (req, res) => {
     try {
         const tickets = await pool.query(
-            `SELECT t.id, t.seat_number, t.booked_at, t.status, t.price,
-                    e.name as event_name, e.venue, e.start_time
+            `SELECT t.id, t.seat_number, t.booked_at, t.status, t.price, t.payment_status, t.refund_id, e.name as event_name, e.venue, e.start_time
              FROM tickets t
              JOIN events e ON t.event_id = e.id
              WHERE t.user_id = $1

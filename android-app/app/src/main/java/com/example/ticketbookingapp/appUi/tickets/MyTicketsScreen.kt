@@ -261,18 +261,29 @@ fun MyTicketsScreen(
                                     Button(
                                         onClick = { ticketToCancel = ticket },
                                         modifier = Modifier.fillMaxWidth(),
+                                        enabled = !state.isRefunding,  // Disable during refund
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = MaterialTheme.colorScheme.errorContainer,
                                             contentColor = MaterialTheme.colorScheme.onErrorContainer
                                         )
                                     ) {
-                                        Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Cancel & Get Rs.${String.format(Locale.US, "%.2f", ticket.price)} Refund")
+                                        if (state.isRefunding) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(18.dp),
+                                                strokeWidth = 2.dp,
+                                                color = MaterialTheme.colorScheme.onErrorContainer
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("Processing Refund...")
+                                        } else {
+                                            Icon(
+                                                Icons.Default.Close,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("Cancel & Get ₹${String.format(Locale.US, "%.2f", ticket.price)} Refund")
+                                        }
                                     }
                                 } else {
                                     Card(

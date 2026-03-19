@@ -30,7 +30,10 @@ data class MyTicket(
     val venue: String,
     @SerializedName("start_time") val startTime: String,
     val status: String = "active",
-    val price: Double = 0.0
+    val price: Double = 0.0,
+    @SerializedName("payment_status") val paymentStatus: String = "pending",  // NEW
+    @SerializedName("payment_amount") val paymentAmount: Double = 0.0,       // NEW
+    @SerializedName("refund_id") val refundId: String? = null                // NEW
 )
 
 data class MyTicketsResponse(

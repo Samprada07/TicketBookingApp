@@ -9,11 +9,13 @@ import com.example.ticketbookingapp.appUi.tickets.MyTicketsState
 import com.example.ticketbookingapp.network.ApiClient
 import com.example.ticketbookingapp.network.ApiService
 import com.example.ticketbookingapp.network.AuthManager
+import com.example.ticketbookingapp.network.RefundRequest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.util.Locale
 
 class MyTicketsViewModel(application: Application) : AndroidViewModel(application) {
     private val _state = MutableStateFlow(MyTicketsState())
@@ -24,7 +26,7 @@ class MyTicketsViewModel(application: Application) : AndroidViewModel(applicatio
     fun onEvent(event: MyTicketsEvent) {
         when (event) {
             MyTicketsEvent.Load, MyTicketsEvent.Retry -> fetchMyTickets()
-            is MyTicketsEvent.CancelTicket -> cancelTicket(event.ticketId)
+            is MyTicketsEvent.CancelTicket -> cancelTicketWithRefund(event.ticketId)
         }
     }
 
@@ -60,7 +62,7 @@ class MyTicketsViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun cancelTicket(ticketId: Int) {
+    private fun cancelTicketWithRefund(ticketId: Int) {
         val token = authManager.getToken()
         if (token == null) {
             _state.value = _state.value.copy(error = "Not logged in")
@@ -68,32 +70,44 @@ class MyTicketsViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(error = null, successMessage = null)
+            _state.value = _state.value.copy(error = null, successMessage = null, isRefunding = true)
             try {
                 val api = ApiClient.retrofit.create(ApiService::class.java)
-                val response = api.cancelTicket(token = "Bearer $token", id = ticketId)
+                val response = api.processRefund(
+                    token = "Bearer $token",
+                    request = RefundRequest(ticketId)
+                )
 
-                if (response.isSuccessful) {
-                    val message = response.body()?.message ?: "Ticket cancelled"
-                    _state.value = _state.value.copy(successMessage = message)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val refundData = response.body()!!
+                    val message = "Refund of ₹${String.format(Locale.US, "%.2f", refundData.amount)} processed successfully. Will reflect in 5-7 days."
+                    _state.value = _state.value.copy(
+                        isRefunding = false,
+                        successMessage = message
+                    )
 
+                    // Reload tickets to show updated status
                     delay(500)
                     fetchMyTickets()
 
-                    delay(3000)
+                    // Clear success message after 4 seconds
+                    delay(4000)
                     _state.value = _state.value.copy(successMessage = null)
                 } else {
                     val errorMessage = try {
                         val json = JSONObject(response.errorBody()?.string() ?: "{}")
                         json.getString("error")
                     } catch (e: Exception) {
-                        "Failed to cancel (${response.code()})"
+                        "Failed to process refund (${response.code()})"
                     }
-                    _state.value = _state.value.copy(error = errorMessage)
+                    _state.value = _state.value.copy(isRefunding = false, error = errorMessage)
                 }
             } catch (e: Exception) {
-                Log.e("API", "Cancel failed", e)
-                _state.value = _state.value.copy(error = e.message ?: "Unknown error")
+                Log.e("API", "Refund failed", e)
+                _state.value = _state.value.copy(
+                    isRefunding = false,
+                    error = "Refund failed: ${e.message}"
+                )
             }
         }
     }
