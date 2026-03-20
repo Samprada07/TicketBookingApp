@@ -7,5 +7,7 @@ data class PaymentState(
     val ticketId: Int? = null,
     val amount: Double = 0.0,
     val paymentSuccess: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val canRetry: Boolean = false,
+    val errorType: String? = null
 )

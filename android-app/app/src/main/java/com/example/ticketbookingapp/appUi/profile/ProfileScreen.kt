@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.ticketbookingapp.navigation.Routes.FAILED_PAYMENTS
 import com.example.ticketbookingapp.navigation.Routes.PAYMENT_HISTORY
 import com.example.ticketbookingapp.viewmodel.ProfileViewModel
 
@@ -181,6 +183,17 @@ fun ProfileScreen(
                     Icon(Icons.AutoMirrored.Filled.List, "Payment History")
                     Spacer(Modifier.width(8.dp))
                     Text("Payment History")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        navController.navigate(FAILED_PAYMENTS)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Warning, "Failed Payments")
+                    Spacer(Modifier.width(8.dp))
+                    Text("Failed Payments")
                 }
             }
 

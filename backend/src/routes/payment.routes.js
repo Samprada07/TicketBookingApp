@@ -19,8 +19,20 @@ router.post("/create-intent", authenticateToken, async (req, res) => {
             return res.status(400).json({ error: "No seats available" });
         }
 
+        // Check if event has already passed
+        const eventStart = new Date(event.rows[0].start_time);
+        if (eventStart < new Date()) {
+            return res.status(400).json({ error: "This event has already passed" });
+        }
+
         const eventData = event.rows[0];
         const amount = Math.round(eventData.price * 100); // Convert to paise/cents
+
+        // Delete any old pending tickets for this user/event
+        await pool.query(
+            "DELETE FROM tickets WHERE user_id = $1 AND event_id = $2 AND payment_status = 'pending'",
+            [req.user.id, event_id]
+        );
 
         // Create Stripe payment intent
         const paymentIntent = await stripe.paymentIntents.create({

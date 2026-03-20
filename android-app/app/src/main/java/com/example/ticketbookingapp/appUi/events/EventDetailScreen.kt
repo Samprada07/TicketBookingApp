@@ -187,7 +187,7 @@ fun EventDetailScreen(
                     Button(
                         onClick = {
                             navController.navigate(
-                                "payment/${event.id}/${event.name}/${event.price}/-1"
+                                "payment/${event.id}/${event.name}/${event.price}/${state.seatNumber.toIntOrNull() ?: -1}"
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),

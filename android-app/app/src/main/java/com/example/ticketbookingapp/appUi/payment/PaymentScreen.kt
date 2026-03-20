@@ -3,7 +3,9 @@ package com.example.ticketbookingapp.appUi.payment
 import android.view.ContextThemeWrapper
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,7 +18,6 @@ import com.example.ticketbookingapp.viewmodel.PaymentViewModel
 import com.stripe.android.view.CardInputWidget
 import java.util.Locale
 
-@Suppress("DEPRECATION")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentScreen(
@@ -45,10 +46,6 @@ fun PaymentScreen(
         }
     }
 
-    LaunchedEffect(state.error) {
-        state.error?.let { snackbarHostState.showSnackbar(it) }
-    }
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -56,7 +53,7 @@ fun PaymentScreen(
                 title = { Text("Payment") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.Default.ArrowBack, "Back")
                     }
                 }
             )
@@ -71,42 +68,56 @@ fun PaymentScreen(
         }
 
         Column(
-            Modifier
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(pad)
                 .padding(24.dp),
-            Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Event details card
             Card(
-                Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer)
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
             ) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(eventName, style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.height(8.dp))
-                    if (seatNumber != null) {
-                        Text("Seat: $seatNumber")
-                    }
-                    Spacer(Modifier.height(8.dp))
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "Total: ₹${String.format(Locale.US, "%.2f", eventPrice)}",
+                        text = eventName,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (seatNumber != null) {
+                        Text(
+                            text = "Seat: $seatNumber",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Total: ₹${String.format(Locale.US, "%.2f", eventPrice)}",
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
 
-            Text("Enter Card Details", style = MaterialTheme.typography.titleMedium)
+            // Card input section
+            Text(
+                text = "Enter Card Details",
+                style = MaterialTheme.typography.titleMedium
+            )
 
-            Card(Modifier.fillMaxWidth()) {
+            Card(modifier = Modifier.fillMaxWidth()) {
                 AndroidView(
                     factory = { ctx ->
-                        // Wrap in AppCompat theme context
-                        val themedContext =
-                            ContextThemeWrapper(ctx, androidx.appcompat.R.style.Theme_AppCompat_Light_NoActionBar)
-                        CardInputWidget(themedContext).also {
-                            cardInputWidget = it
-                            it.setPadding(16, 16, 16, 16)
+                        val themedContext = ContextThemeWrapper(
+                            ctx,
+                            com.google.android.material.R.style.Theme_Material3_Light
+                        )
+                        CardInputWidget(themedContext).also { widget ->
+                            cardInputWidget = widget
+                            widget.setPadding(16, 16, 16, 16)
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(80.dp)
@@ -114,24 +125,79 @@ fun PaymentScreen(
             }
 
             Text(
-                "Test: 4242 4242 4242 4242, any future date, any CVC",
-                style = MaterialTheme.typography.bodySmall
+                text = "Test: 4242 4242 4242 4242, any future date, any CVC",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(Modifier.weight(1f))
+            // Error display with retry option
+            state.error?.let { errorMessage ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Payment Failed",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = errorMessage,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
 
+                        if (state.canRetry) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedButton(
+                                onClick = { viewModel.retryPayment() },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Try Again")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Pay button
             Button(
                 onClick = {
-                    cardInputWidget?.cardParams?.let {
-                        viewModel.processPayment(context, it)
+                    cardInputWidget?.cardParams?.let { cardParams ->
+                        viewModel.processPayment(context, cardParams)
                     }
                 },
-                Modifier.fillMaxWidth(),
-                enabled = !state.isProcessing
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.isProcessing && state.error == null
             ) {
                 if (state.isProcessing) {
-                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text("Processing...")
                 } else {
                     Text("Pay ₹${String.format(Locale.US, "%.2f", eventPrice)}")

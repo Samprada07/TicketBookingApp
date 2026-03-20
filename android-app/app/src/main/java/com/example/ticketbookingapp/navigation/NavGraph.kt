@@ -1,5 +1,6 @@
 package com.example.ticketbookingapp.navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
@@ -13,6 +14,7 @@ import com.example.ticketbookingapp.appUi.admin.EventBookingsScreen
 import com.example.ticketbookingapp.appUi.events.EventDetailScreen
 import com.example.ticketbookingapp.appUi.events.EventListScreen
 import com.example.ticketbookingapp.appUi.login.LoginScreen
+import com.example.ticketbookingapp.appUi.payment.FailedPaymentsScreen
 import com.example.ticketbookingapp.appUi.payment.PaymentHistoryScreen
 import com.example.ticketbookingapp.appUi.payment.PaymentScreen
 import com.example.ticketbookingapp.appUi.profile.ProfileScreen
@@ -20,6 +22,7 @@ import com.example.ticketbookingapp.appUi.register.RegisterScreen
 import com.example.ticketbookingapp.appUi.splash.SplashScreen
 import com.example.ticketbookingapp.appUi.tickets.MyTicketsScreen
 import com.example.ticketbookingapp.navigation.Routes.EVENT_LIST
+import com.example.ticketbookingapp.navigation.Routes.FAILED_PAYMENTS
 import com.example.ticketbookingapp.navigation.Routes.MY_TICKETS
 import com.example.ticketbookingapp.navigation.Routes.PAYMENT
 import com.example.ticketbookingapp.navigation.Routes.PAYMENT_HISTORY
@@ -38,6 +41,7 @@ object Routes {
     const val PROFILE = "profile"
     const val PAYMENT = "payment/{eventId}/{eventName}/{eventPrice}/{seatNumber}"
     const val PAYMENT_HISTORY = "payment_history"
+    const val FAILED_PAYMENTS = "failed_payments"
 }
 
 @Composable
@@ -232,6 +236,20 @@ fun NavGraph() {
         composable(PAYMENT_HISTORY) {
             PaymentHistoryScreen(
                 onNavigateBack = { navController.navigateUp() }
+            )
+        }
+        // ── Failed Payments ────────────────────────────────────────
+        composable(FAILED_PAYMENTS) {
+            FailedPaymentsScreen(
+                onNavigateBack = { navController.navigateUp() },
+                onRetryPayment = { eventId, eventName, eventPrice, seatNumber ->
+                    Log.d("RetryPayment", "Event: $eventId, Name: $eventName" )
+                    navController.navigate(
+                        "payment/$eventId/$eventName/$eventPrice/${seatNumber ?: -1}"
+                    ) {
+                        popUpTo(FAILED_PAYMENTS) { inclusive = true }
+                    }
+                }
             )
         }
     }

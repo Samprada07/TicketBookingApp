@@ -80,7 +80,17 @@ fun MyTicketsScreen(
         AlertDialog(
             onDismissRequest = { ticketToCancel = null },
             title = { Text("Cancel Ticket") },
-            text = { Text("Cancel this ticket? Refund of ₹${String.format(Locale.US, "%.2f", ticket.price)} in 5-7 days.") },
+            text = {
+                Text(
+                    "Cancel this ticket? Refund of ₹${
+                        String.format(
+                            Locale.US,
+                            "%.2f",
+                            ticket.price
+                        )
+                    } in 5-7 days."
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.onEvent(MyTicketsEvent.CancelTicket(ticket.id))
@@ -99,9 +109,11 @@ fun MyTicketsScreen(
 
     selectedTicket?.let { ticket ->
         Dialog(onDismissRequest = { selectedTicket = null }) {
-            Card(modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -178,31 +190,41 @@ fun MyTicketsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(state.tickets.filter { ticket ->
-                    // Hide cancelled tickets older than 7 days
-                    @Suppress("CascadeIf")
-                    if (ticket.status == "cancelled") {
-                        try {
-                            val bookedDate = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-                                .parse(ticket.bookedAt) ?: return@filter true
-                            val daysSinceCancelled = (Date().time - bookedDate.time) / (1000.0 * 60 * 60 * 24)
-                            daysSinceCancelled <= 7
-                        } catch (_: Exception) {
-                            true
-                        }
-                    } else if (ticket.status == "expired") {
-                        try {
-                            val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).apply {
-                                timeZone = TimeZone.getTimeZone("UTC")
-                            }
-                            val eventStart = dateFormat.parse(ticket.startTime) ?: return@filter true
-                            val daysSinceEvent = (Date().time - eventStart.time) / (1000.0 * 60 * 60 * 24)
-                            daysSinceEvent <= 7
-                        } catch (_: Exception) {
-                            true
-                        }
-                    } else {
-                        true // Show active tickets
-                    }
+                    ticket.paymentStatus == "succeeded" && (
+                            // Hide cancelled tickets older than 7 days
+                            @Suppress("CascadeIf")
+                            if (ticket.status == "cancelled") {
+                                try {
+                                    val bookedDate = SimpleDateFormat(
+                                        "yyyy-MM-dd'T'HH:mm:ss",
+                                        Locale.getDefault()
+                                    )
+                                        .parse(ticket.bookedAt) ?: return@filter true
+                                    val daysSinceCancelled =
+                                        (Date().time - bookedDate.time) / (1000.0 * 60 * 60 * 24)
+                                    daysSinceCancelled <= 7
+                                } catch (_: Exception) {
+                                    true
+                                }
+                            } else if (ticket.status == "expired") {
+                                try {
+                                    val dateFormat = SimpleDateFormat(
+                                        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                                        Locale.getDefault()
+                                    ).apply {
+                                        timeZone = TimeZone.getTimeZone("UTC")
+                                    }
+                                    val eventStart =
+                                        dateFormat.parse(ticket.startTime) ?: return@filter true
+                                    val daysSinceEvent =
+                                        (Date().time - eventStart.time) / (1000.0 * 60 * 60 * 24)
+                                    daysSinceEvent <= 7
+                                } catch (_: Exception) {
+                                    true
+                                }
+                            } else {
+                                true // Show active tickets
+                            })
                 }) { ticket ->
                     Card(
                         Modifier.fillMaxWidth(),
@@ -213,15 +235,30 @@ fun MyTicketsScreen(
                         Column(Modifier.padding(16.dp)) {
                             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                                 Column(Modifier.weight(1f)) {
-                                    Text(ticket.eventName, style = MaterialTheme.typography.titleMedium)
+                                    Text(
+                                        ticket.eventName,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
                                     Spacer(Modifier.height(4.dp))
-                                    Text("📍 ${ticket.venue}", style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        "📍 ${ticket.venue}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
                                     Spacer(Modifier.height(4.dp))
-                                    Text("🕐 ${ticket.startTime}", style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        "🕐 ${ticket.startTime}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
                                     Spacer(Modifier.height(4.dp))
                                     Text(
                                         if (ticket.seatNumber != null) "🪑 Seat: ${ticket.seatNumber}" else "🪑 Any",
                                         style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        "📅 Booked: ${ticket.bookedAt.take(10)}",  // Shows just the date
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Spacer(Modifier.height(4.dp))
                                     Text(
@@ -232,16 +269,24 @@ fun MyTicketsScreen(
 
                                     if (ticket.status == "cancelled") {
                                         Spacer(Modifier.height(8.dp))
-                                        Text("❌ CANCELLED", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error)
+                                        Text(
+                                            "❌ CANCELLED",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
                                     }
 
                                     if (ticket.status == "expired") {
                                         Spacer(Modifier.height(8.dp))
-                                        Text("⏰ EXPIRED", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(
+                                            "⏰ EXPIRED",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
                                 }
 
-                                if (ticket.status == "active") {
+                                if (ticket.status == "active" && ticket.paymentStatus == "succeeded") {
                                     Spacer(Modifier.width(16.dp))
                                     generateQRCode("TICKET-${ticket.id}", 150)?.let {
                                         Image(
@@ -255,7 +300,7 @@ fun MyTicketsScreen(
                                 }
                             }
 
-                            if (ticket.status == "active") {
+                            if (ticket.status == "active" && ticket.paymentStatus == "succeeded") {
                                 Spacer(Modifier.height(12.dp))
                                 if (canCancelTicket(ticket)) {
                                     Button(
@@ -282,7 +327,15 @@ fun MyTicketsScreen(
                                                 modifier = Modifier.size(18.dp)
                                             )
                                             Spacer(Modifier.width(8.dp))
-                                            Text("Cancel & Get ₹${String.format(Locale.US, "%.2f", ticket.price)} Refund")
+                                            Text(
+                                                "Cancel & Get ₹${
+                                                    String.format(
+                                                        Locale.US,
+                                                        "%.2f",
+                                                        ticket.price
+                                                    )
+                                                } Refund"
+                                            )
                                         }
                                     }
                                 } else {
