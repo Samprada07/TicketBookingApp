@@ -9,6 +9,7 @@ import com.example.ticketbookingapp.appUi.events.EventDetailState
 import com.example.ticketbookingapp.network.ApiClient
 import com.example.ticketbookingapp.network.ApiService
 import com.example.ticketbookingapp.network.AuthManager
+import com.example.ticketbookingapp.network.CreatePaymentIntentRequest
 import com.example.ticketbookingapp.network.TicketRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -105,5 +106,46 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
                 )
             }
         }
+    }
+
+    fun checkCanBook(
+        eventId: Int,
+        seatNumber: Int?,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val token = authManager.getToken()
+        if (token == null) {
+            onError("Please log in to continue")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val api = ApiClient.retrofit.create(ApiService::class.java)
+                val response = api.createPaymentIntent(
+                    "Bearer $token",
+                    CreatePaymentIntentRequest(eventId, seatNumber)
+                )
+
+                if (response.isSuccessful) {
+                    onSuccess()
+                } else {
+                    val error = try {
+                        JSONObject(response.errorBody()?.string() ?: "{}").getString("error")
+                    } catch (e: Exception) {
+                        "Failed to proceed (${response.code()})"
+                    }
+                    onError(error)
+                }
+            } catch (e: Exception) {
+                Log.e("EventDetail", "Check failed", e)
+                onError(e.message ?: "Network error")
+            }
+        }
+    }
+
+    fun showError(message: String) {
+        _state.value = _state.value.copy(error = message)
     }
 }

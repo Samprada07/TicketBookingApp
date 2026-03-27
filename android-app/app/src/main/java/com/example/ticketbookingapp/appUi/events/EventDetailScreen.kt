@@ -1,5 +1,6 @@
 package com.example.ticketbookingapp.appUi.events
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -36,6 +38,8 @@ fun EventDetailScreen(
     val authManager = remember { AuthManager(context.applicationContext) }
     val isAdmin = authManager.isAdmin()
 
+    var isCheckingPayment by remember { mutableStateOf(false) }
+
     // Load event on first composition
     LaunchedEffect(eventId) {
         viewModel.onEvent(EventDetailEvent.Load(eventId))
@@ -51,13 +55,27 @@ fun EventDetailScreen(
 
     // Show error in snackbar
     LaunchedEffect(state.error) {
-        state.error?.let {
-            snackbarHostState.showSnackbar(it)
+        state.error?.let { errorMessage ->
+            snackbarHostState.showSnackbar(
+                message = errorMessage,
+                duration = SnackbarDuration.Long,
+                withDismissAction = true
+            )
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    actionColor = if (isSystemInDarkTheme()) Color.White else Color.Black,                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text("Event Details") },
@@ -186,17 +204,35 @@ fun EventDetailScreen(
 
                     Button(
                         onClick = {
-                            navController.navigate(
-                                "payment/${event.id}/${event.name}/${event.price}/${state.seatNumber.toIntOrNull() ?: -1}"
+                            isCheckingPayment = true
+                            viewModel.checkCanBook(
+                                eventId = event.id,
+                                seatNumber = state.seatNumber.toIntOrNull(),
+                                onSuccess = {
+                                    // Navigate only if check succeeds
+                                    navController.navigate(
+                                        "payment/${event.id}/${event.name}/${event.price}/${state.seatNumber.toIntOrNull() ?: -1}"
+                                    )
+                                },
+                                onError = { errorMessage ->
+                                    isCheckingPayment = false
+                                    // Show error in snackbar, don't navigate
+                                    viewModel.showError(errorMessage)
+                                }
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = event.availableSeats > 0
+                        enabled = event.availableSeats > 0 && !isCheckingPayment
                     ) {
-                        if (event.availableSeats > 0) {
-                            Text("Proceed to Payment - ₹${String.format(Locale.US, "%.2f", event.price)}")
+                        if (isCheckingPayment) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Checking...")
                         } else {
-                            Text("No Seats Available")
+                            Text("Proceed to Payment - ₹${String.format(Locale.US, "%.2f", event.price)}")
                         }
                     }
                 }
